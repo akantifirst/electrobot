@@ -1,4 +1,5 @@
 import config
+import time
 import telebot  # install package as pyTelegramBotAPI
 from calc import calc
 
@@ -29,12 +30,23 @@ def start_command(message):
 # Handle all other messages with content_type 'text' (content_types defaults to ['text'])
 @bot.message_handler(func=lambda message: True)
 def request_message(message):
+    # Handling incorrect user input
     try:
         power, current, voltage, power_factor = calc(message.text)
-        bot.reply_to(message, f'P = <b>{power:.1f}</b> kW, \n'
-                              f'I = <b>{current:.1f}</b> A, \n'
-                              f'<i>U = {voltage:.0f} V, \n'
-                              f'cos(φ) = {power_factor:.2f}</i>', parse_mode='HTML')
+        # Handling network disconnect
+        try:
+
+            bot.send_message(message.chat.id, f'P = <b>{power:.1f}</b> kW, \n'
+                                              f'I = <b>{current:.1f}</b> A, \n'
+                                              f'<i>U = {voltage:.0f} V, \n'
+                                              f'cos(φ) = {power_factor:.2f}</i>', parse_mode='HTML')
+        except (ConnectionAbortedError, ConnectionResetError, ConnectionRefusedError, ConnectionError):
+            print("ConnectionError - Sending again after 5 seconds!!!")
+            time.sleep(5)
+            bot.send_message(message.chat.id, f'P = <b>{power:.1f}</b> kW, \n'
+                                              f'I = <b>{current:.1f}</b> A, \n'
+                                              f'<i>U = {voltage:.0f} V, \n'
+                                              f'cos(φ) = {power_factor:.2f}</i>', parse_mode='HTML')
     except TypeError:
         bot.reply_to(message, 'Please, review your request')
 
