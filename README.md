@@ -1,5 +1,5 @@
 # nb_electrobot
 
-![Elektrobot Logo](/images/logo.png)
+![Elektrobot Logo](/images/repository-graph.png)
 
 A simple telegram bot that converts electrical power to current.
