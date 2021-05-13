@@ -1,7 +1,7 @@
 import telebot
 from calc import calc
 
-bot = telebot.TeleBot('1779223371:AAFDFO38aEeVMCZzT4tSe1VczuFk4y-OCB4')
+bot = telebot.TeleBot('Insert your telegram bot token here')
 
 
 @bot.message_handler(commands=['start'])
