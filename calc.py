@@ -46,11 +46,12 @@ def parse_input(user_input):
             else:
                 # If suffices are missing, try to guess what user means
                 with suppress(IndexError):
-                    #
+                    # Check if first element of input is a number
                     if not data[0].islower():
                         power = float(data[0])
                     if 0.5 <= float(e) <= 1:
                         power_factor = float(e)
+                    # If no suffix vor voltage specifies, choose between 230V and 400V
                     if e in {'230', '400'}:
                         voltage = float(e)
         return power, current, voltage, power_factor
