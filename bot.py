@@ -1,7 +1,8 @@
-import telebot
+import config
+import telebot  # install package as pyTelegramBotAPI
 from calc import calc
 
-bot = telebot.TeleBot('Insert your telegram bot token here')
+bot = telebot.TeleBot(config.token)
 
 
 @bot.message_handler(commands=['start'])
