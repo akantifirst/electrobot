@@ -9,6 +9,7 @@ A simple telegram bot that converts electrical power to current and vice versa.
 <br>```12a 230V 0,8  => 12A 230V cos(φ)=0.80```
 <br>```280  => 280kW 400V cos(φ)=0.95```
 <br>
+<br>
 ## Installation
 
 No need to install, just add [@nb_electrobot](https://t.me/nb_electrobot)
