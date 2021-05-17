@@ -18,3 +18,11 @@ No need to install, just start [@nb_electrobot](https://t.me/nb_electrobot) in T
 ## Roadmap
 
 in future, this bot will be able to generate electrical schemas based on user input and provide them on the fly as convenient pdf files.
+
+Following problems need to be solved:
+1. Mathematical engine for solving cable sections incl. voltage drop, type of cable, way of laying etc.
+2. Database storage for user requests
+3. VPN access to server
+4. Generation of schemas from project database
+5. Convertion of schemas to PNG and then to PDF
+6. 
