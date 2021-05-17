@@ -13,7 +13,7 @@ A simple telegram bot that converts electrical power to current and vice versa.
 <br>
 ## Installation
 
-No need to install, just add [@nb_electrobot](https://t.me/nb_electrobot) to Telegram.
+No need to install, just start [@nb_electrobot](https://t.me/nb_electrobot) in Telegram.
 
 ## Roadmap
 
