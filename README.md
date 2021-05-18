@@ -25,4 +25,3 @@ Following problems need to be solved:
 3. VPN access to server
 4. Generation of schemas from project database
 5. Convertion of schemas to PNG and then to PDF
-6. 
