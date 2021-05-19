@@ -36,7 +36,7 @@ async def echo_message(msg: types.Message):
                                                  f'I = <b>{current:.1f}</b> A, \n'
                                                  f'<i>U = {voltage:.0f} V, \n'
                                                  f'cos(φ) = {power_factor:.2f}</i>', parse_mode='HTML')
-    except TypeError:
+    except (TypeError, ValueError):
         await msg.reply('Please, review your request')
 
 
