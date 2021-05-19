@@ -26,7 +26,7 @@ def calc(message):
         # If this happens, {current} variable still equals whitespace and cant be divided
         # It means, that user entered power and expects current to be calculated
         if voltage >= 380:
-            current = 1000 * power / (power_factor * voltage)
+            current = 1000 * power / (math.sqrt(3) * power_factor * voltage)
         else:
             current = 1000 * power / (power_factor * voltage)
     return power, current, voltage, power_factor
