@@ -58,7 +58,7 @@ def parse_input(user_input):
                     if 0.5 <= float(e) <= 1:
                         power_factor = float(e)
                     # If no suffix vor voltage specifies, choose between 230V and 400V
-                    if e in {'230', '400'}:
+                    if e in {'220', '230', '400'}:
                         voltage = float(e)
         return power, current, voltage, power_factor
     except ValueError:
