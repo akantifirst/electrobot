@@ -17,13 +17,13 @@ A simple telegram bot that converts electrical power to current and vice versa.
 ## Installation
 
 No need to install, just start [@nb_electrobot](https://t.me/nb_electrobot) in Telegram.
-In case you want to run it locally, clone to your Linux server and add config.py file 
-with TOKEN=<your-token-from-telegram-botfather>
-You can also run the script as a service.
+<br>In case you want to run it locally, clone to your Linux server and add ```config.py``` file 
+with ```TOKEN="your-token-from-telegram-botfather"```
+<br>You can also run the script as a service.
 
 ## Roadmap
 
-in future, this bot will be able to generate electrical schemas based on user input and provide them on the fly as convenient pdf files.
+In future, this bot will be able to generate electrical schemas based on user input and provide them on the fly as convenient pdf files.
 
 Following problems need to be solved:
 1. Database storage for user requests
@@ -31,8 +31,9 @@ Following problems need to be solved:
 3. Convertion of schemas to PNG and then to PDF
 
 ##Limitations
-Currently only german language is supported. 
-Available cable types are NYM, NYY, NYCWY, N2XH
-Available circuit breaker makers are ABB, Hager, Siemens
-Currently only circuit breakers are supported (fuses are not supported)
-This program doesn't concider circuit breaker selectivity.
+
+<br>Currently only german language is supported.
+<br>Available cable types are NYM, NYY, NYCWY, N2XH.
+<br>Available circuit breaker makers are ABB, Hager, Siemens.
+<br>Currently only circuit breakers are supported (fuses are not supported).
+<br>This program doesn't concider circuit breaker selectivity.
