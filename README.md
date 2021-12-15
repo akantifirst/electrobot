@@ -18,7 +18,7 @@ A simple telegram bot that converts electrical power to current and vice versa.
 
 No need to install, just start [@nb_electrobot](https://t.me/nb_electrobot) in Telegram.
 <br>In case you want to run it locally, clone to your Linux server and add ```config.py``` file 
-with ```TOKEN="your-token-from-telegram-botfather"```
+<br>with ```TOKEN="your-token-from-telegram-botfather"```
 <br>You can also run the script as a service.
 
 ## Roadmap
@@ -30,7 +30,7 @@ Following problems need to be solved:
 2. Generation of schemas from project database
 3. Convertion of schemas to PNG and then to PDF
 
-##Limitations
+## Limitations
 
 <br>Currently only german language is supported.
 <br>Available cable types are NYM, NYY, NYCWY, N2XH.
