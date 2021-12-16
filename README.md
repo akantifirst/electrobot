@@ -28,7 +28,7 @@ In the future, this bot will be able to generate electrical schemas based on use
 Following problems need to be solved:
 1. Database storage for user requests
 2. Generation of schemas from project database
-3. Convertion of schemas to PNG and then to PDF
+3. Conversion of schemas to PNG and then to PDF
 
 ## Limitations
 
