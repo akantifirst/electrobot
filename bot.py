@@ -5,6 +5,7 @@ from aiogram.dispatcher.fsm.context import FSMContext
 from aiogram.dispatcher.fsm.state import State, StatesGroup
 from aiogram.types import KeyboardButton, Message, ReplyKeyboardMarkup, ReplyKeyboardRemove
 from aiogram.types import FSInputFile
+from config import TOKEN
 import calc
 import cad
 
@@ -269,7 +270,7 @@ async def echo_message(message: Message):
 
 
 async def main():
-    bot = Bot(token="2110824051:AAEwlUouUFgTDI8Gkf8s6HN6xw9QPT1M9FU", parse_mode="HTML")
+    bot = Bot(token=TOKEN, parse_mode="HTML")
     dp = Dispatcher()
     dp.include_router(router)
     await dp.start_polling(bot)
