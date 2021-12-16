@@ -32,7 +32,7 @@ Following problems need to be solved:
 
 ## Limitations
 
-Currently only german language is supported.
+Currently, only german language is supported.
 <br>Available cable types are NYM, NYY, NYCWY, N2XH.
 <br>Available circuit breaker makers are ABB, Hager, Siemens.
 <br>Currently only circuit breakers are supported (fuses are not supported).
