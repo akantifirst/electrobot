@@ -29,7 +29,7 @@ async def process_help(message: types.Message):
 
 
 @dp.message(commands=['laying'])
-async def process_help_command(message: types.Message):
+async def process_laying(message: types.Message):
     await message.reply('<b>A1</b> <i> - in Installationsrohren in wärmegedämmten Wänden</i>\n'
                         '<b>A2</b> <i> - in Installationsrohren in wärmegedämmten Wänden; Mehradrig</i>\n'
                         '<b>B1</b> <i> - in Installationsrohren auf einer Wand</i>\n'
