@@ -23,7 +23,7 @@ No need to install, just start [@nb_electrobot](https://t.me/nb_electrobot) in T
 
 ## Roadmap
 
-In future, this bot will be able to generate electrical schemas based on user input and provide them on the fly as convenient pdf files.
+In the future, this bot will be able to generate electrical schemas based on user input and provide them on the fly as convenient pdf files.
 
 Following problems need to be solved:
 1. Database storage for user requests
