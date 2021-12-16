@@ -1,207 +1,152 @@
-import csv
-from math import sqrt, sin, acos
-from config import *
-
-# BUG: du has no effect with bigger power e.g. 500kw 300m
+import ezdxf
+from ezdxf import units
 
 
-def clear_chars(input_string):
-    """This function deletes all chars from the string,
-    except digits or decimal separation dot"""
-    number = float(''.join([e for e in input_string if e.isdigit() or e == '.']))
-    return number
+def get_insert_point(number):
+    """Returns x, y coordinates."""
+    x = 52 + number * 46
+    y = 110
+    return x, y
 
 
-def parse_input(user_input):
-    """
-    This function parses user input and finds the values of
-    electrical current, power, power factor or voltage
-    """
+def gen_nb_ls(doc, style_electro, style_thin, style_boldline, style_name, style_std, style_q):
+    # Create a block with the name 'NB_LS'
+    nb_ls = doc.blocks.new(name='NB_LS')
 
-    name = NAME
-    power = POWER
-    current = CURRENT
-    voltage = VOLTAGE
-    phi = PHI
-    laying = LAYING
-    cable = CABLE
-    length = LENGTH
-    medium = MEDIUM
-    g = G
-    maker = MAKER
-    du_max = DU_MAX
+    # Set millimeter as 'NB_LS' block units
+    nb_ls.units = units.MM
 
-    # Refine user input
-    user_input = user_input.replace(',', '.').lower().split(' ')
-    # get name
-    if sum(c.isalpha() for c in user_input[0]) > 2 or sum(c.isdigit() for c in user_input[0]) == 0:
-        name = user_input[0]
-        user_input = user_input[1:]
-    try:
-        for word in user_input:
-            if word[len(word) - 1] == 'a':
-                current = clear_chars(word)  # get current
-            elif any([_ in word for _ in ['kw']]):
-                power = clear_chars(word)  # get power
-            elif any([_ in word for _ in ['nyy', 'nym', 'nycwy', 'nhxh']]):
-                cable = str(word)  # get cable
-            elif word[len(word) - 1] == 'v':
-                voltage = clear_chars(word)  # get voltage
-            elif word[len(word) - 1] == 'm':
-                length = clear_chars(word)  # get length
-                print(length)
-            elif any([_ in word for _ in ['a1', 'a2', 'b1', 'b2', 'c1', 'd1', 'e1', 'f1', 'f2', 'f3', 'g1', 'g2']]):
-                laying = str(word)  # get laying
-            elif any([_ in word for _ in ['alu', 'cu']]):
-                medium = str(word)  # get medium
-            elif word[len(word) - 1] == 'g':
-                g = str(word)[:-1]  # get g (german: gleichzeitigkeitsfaktor)
-            elif any([_ in word for _ in ['abb', 'siemens', 'hager']]):
-                maker = str(word)  # get maker
-            elif word[len(word) - 1] == '%':
-                du_max = float(word[:-1])  # get du_max
-            elif 0.6 <= float(word) <= 1.0:
-                phi = float(word)
+    # Add DXF entities to the block 'NB_LS'.
+    # The default base point (= insertion point) of the block is (0, 0).
+    nb_ls.add_line((0, 19.5), (0, 0), dxfattribs=style_electro)  # point to contact
+    nb_ls.add_line((0, 19.5), (-5, 28.5), dxfattribs=style_electro)  # contact
+    nb_ls.add_line((-4.7, 22.7), (-2.5, 24), dxfattribs=style_electro)  # release
+    nb_ls.add_line((0, 29), (0, 77.5), dxfattribs=style_electro)  # contact to feeder
+    nb_ls.add_line((21, 85), (-21, 85), dxfattribs=style_boldline)  # horizontal under laying
+    nb_ls.add_line((21, 91), (-21, 91), dxfattribs=style_thin)  # horizontal under length
+    nb_ls.add_line((21, 97), (-21, 97), dxfattribs=style_thin)  # horizontal under cable
+    nb_ls.add_line((21, 103), (-21, 103), dxfattribs=style_thin)  # horizontal under phi
+    nb_ls.add_line((21, 109), (-21, 109), dxfattribs=style_thin)  # horizontal under power
+    nb_ls.add_line((21, 115), (-21, 115), dxfattribs=style_thin)  # horizontal under name
+    nb_ls.add_line((21, 123), (-21, 123), dxfattribs=style_boldline)  # horizontal on name
+    nb_ls.add_line((-21, 85), (-21, 123), dxfattribs=style_boldline)  # vertical left
+    nb_ls.add_line((0, 91), (0, 115), dxfattribs=style_thin)  # vertical center
+    nb_ls.add_line((21, 85), (21, 123), dxfattribs=style_boldline)  # vertical right
 
-        parsed_data = [name, power, current, voltage, phi, laying, cable, length, medium, g, maker, du_max]
-        return parsed_data
-    except ValueError:
-        print(f'Please review your request: [parse_input]')
+    # Define hatch arrows and points
+    hatch = nb_ls.add_hatch(color=5)
+    hatch.paths.add_polyline_path([(-6, 22), (-4.75, 23.45), (-4.12, 22.35)], is_closed=True)
+    hatch.paths.add_polyline_path([(0, 80), (-0.95, 77.25), (0.95, 77.25)], is_closed=True)
+    hatch.paths.add_polyline_path([(-1, 0, -1), (1, 0, -1)], is_closed=True)
+
+    # Define some attributes for the block 'NB_LS'
+    nb_ls.add_attdef('NAME', dxfattribs=style_name).set_pos((0, 117.25), align='CENTER')
+    nb_ls.add_attdef('POWER', dxfattribs=style_std).set_pos((-19, 110.75), align='LEFT')
+    nb_ls.add_attdef('G', dxfattribs=style_std).set_pos((2, 110.75), align='LEFT')
+    nb_ls.add_attdef('PHI', dxfattribs=style_std).set_pos((-19, 104.75), align='LEFT')
+    nb_ls.add_attdef('VOLTAGE', dxfattribs=style_std).set_pos((2, 104.75), align='LEFT')
+    nb_ls.add_attdef('CABLE', dxfattribs=style_std).set_pos((-19, 98.75), align='LEFT')
+    nb_ls.add_attdef('SECTION', dxfattribs=style_std).set_pos((2, 98.75), align='LEFT')
+    nb_ls.add_attdef('LENGTH', dxfattribs=style_std).set_pos((-19, 92.75), align='LEFT')
+    nb_ls.add_attdef('DU', dxfattribs=style_std).set_pos((2, 92.75), align='LEFT')
+    nb_ls.add_attdef('LAYING', dxfattribs=style_std).set_pos((0, 86.75), align='CENTER')
+    nb_ls.add_attdef('CB', dxfattribs=style_std).set_pos((2.8, 32), align='LEFT')
+    nb_ls.add_attdef('CB_TYPE', dxfattribs=style_std).set_pos((2.8, 26), align='LEFT')
+    nb_ls.add_attdef('RELEASE', dxfattribs=style_std).set_pos((2.8, 20), align='LEFT')
+    nb_ls.add_attdef('IB', dxfattribs=style_std).set_pos((2.8, 14), align='LEFT')
+    nb_ls.add_attdef('Q', dxfattribs=style_q).set_pos((-2.8, 13), align='RIGHT')
 
 
-def power_current(power, current, voltage, phi):
-    """This function calculates electrical power in kW
-        or electrical current in A"""
-    # Not sure if user wants power or current
-    try:
-        if voltage >= 300:
-            power = round((sqrt(3) * phi * voltage * current) / 1000, 2)
-        else:
-            power = round((phi * voltage * current) / 1000, 2)
-    except TypeError:
-        # If this happens, {current} variable still equals whitespace and cant be divided
-        # It means, that user entered power and expects current to be calculated
-        if voltage >= 300:
-            current = round(1000 * power / (sqrt(3) * phi * voltage), 2)
-        else:
-            current = round(1000 * power / (phi * voltage), 2)
-    return power, current
+def gen_title(doc, style_thin, style_boldline, style_title1):
+    title = doc.blocks.new(name='TITLE')
+
+    # Set millimeter as 'NB_LS' block units
+    title.units = units.MM
+
+    # Add DXF entities to the block 'TITLE'.
+    # The default base point (= insertion point) of the block is (0, 0).
+    title.add_line((0, 0), (0, 30), dxfattribs=style_boldline)  # left vertical
+    title.add_line((0, 30), (393, 30), dxfattribs=style_boldline)  # upper horizontal
+    title.add_line((150, 30), (150, 6), dxfattribs=style_boldline)  # center left vertical
+    title.add_line((150, 6), (243, 6), dxfattribs=style_boldline)  # center horizontal
+    title.add_line((243, 6), (243, 30), dxfattribs=style_boldline)  # center right vertical
+    title.add_line((0, 24), (150, 24), dxfattribs=style_thin)
+    title.add_line((0, 18), (150, 18), dxfattribs=style_thin)
+    title.add_line((0, 12), (150, 12), dxfattribs=style_thin)
+    title.add_line((0, 6), (150, 6), dxfattribs=style_thin)
+    title.add_line((12, 0), (12, 30), dxfattribs=style_thin)
+    title.add_line((24, 0), (24, 30), dxfattribs=style_thin)
+    title.add_line((36, 0), (36, 30), dxfattribs=style_thin)
+    title.add_line((150, 0), (150, 6), dxfattribs=style_thin)
+    title.add_line((243, 0), (243, 6), dxfattribs=style_thin)
+    title.add_line((243, 24), (393, 24), dxfattribs=style_thin)
+    title.add_line((243, 12), (393, 12), dxfattribs=style_thin)
+    title.add_line((243, 6), (393, 6), dxfattribs=style_thin)
+    title.add_line((263.5, 24), (263.5, 30), dxfattribs=style_thin)
+    title.add_line((354, 24), (354, 30), dxfattribs=style_thin)
+    title.add_line((374, 24), (374, 30), dxfattribs=style_thin)
+    title.add_line((263.5, 0), (263.5, 12), dxfattribs=style_thin)
+    title.add_line((311, 0), (311, 12), dxfattribs=style_thin)
+    title.add_line((323, 0), (323, 12), dxfattribs=style_thin)
+    title.add_line((335.5, 0), (335.5, 12), dxfattribs=style_thin)
+    title.add_line((350.5, 0), (350.5, 12), dxfattribs=style_thin)
+    title.add_line((366, 0), (366, 12), dxfattribs=style_thin)
+    title.add_line((378, 0), (378, 12), dxfattribs=style_thin)
+
+    # add constant text entities
+    title.add_text('Index', dxfattribs=style_title1).set_pos((2, 104.75), align='MIDDLE CENTER')
 
 
-def cable_section(voltage, length, current, phi, medium, laying, du_max):
-    """
-    Finds in table the minimal cable section allowed for this current and kind of laying
-    """
-    data, section_ib, section_du, system_ib, system_du, system = [], '?', '?', 1, 1, 1
-    laying = laying + '.3' if voltage >= 370 else laying + '.2'
-    for row in csv.reader(open(r'CU_Z70_U30.csv', 'r'), delimiter=';'):
-        data.append(row)
-    # find the right column based on the way of laying:
-    index_laying = data[0].index(laying)
-    current_list = [e[index_laying] for e in data][1:]
-    section_list = [e[0] for e in data][1:]
-    # check current condition:
-    for system_ib in range(1, 8):
-        try:
-            section_ib = next(data[i + 1][0] for i, v in enumerate(current_list) if float(v) >= current / system_ib)
-            break
-        except (ValueError, IndexError):
-            print(r'Cant find cable section - check index or value')
-        except StopIteration:
-            continue
-    # check du condition
-    ro = RO_CU if medium == 'cu' else RO_AL
-    x = X
-    for system_du in range(1, 8):
-        try:
-            section_du = (ro * length * phi) / \
-                         ((voltage * du_max / (sqrt(3) * (current / system_du) * 100)) - (
-                                 x * length * sin(acos(phi)) / 1000))
-            section_du = next(v for v in section_list if float(v) >= section_du)
-            break
-        except StopIteration:
-            continue
-    # choose max from ib and du conditions
-    try:
-        if float(section_ib * system_ib) > float(section_du * system_du):
-            section = float(section_ib)
-            system = system_ib
-        else:
-            section = float(section_du)
-            system = system_du
-        du = round(100 * (sqrt(3) * ((ro * length * phi) / float(section) +
-                                     (x * length * sin(acos(phi))) / 1000) * (current / system)) / voltage, 2)
-    except ValueError:
-        section, du = '?', '?'
-    return section, system, du
+def cad_write(formatted_data):
+    # Create a new drawing in the DXF format of AutoCAD 2010
+    doc = ezdxf.new('R2000', setup=True)
 
+    # Set millimeter as document/modelspace units
+    doc.units = units.MM
 
-def circuit_breaker(current, maker, voltage):
-    """
-    Finds circuit breaker and tripping unit
-    """
-    data = []
-    db = f'db/{maker.upper()}.csv'
-    poles = "3" if voltage > 240 or current > 63 else "1"
-    for row in csv.reader(open(db, 'r'), delimiter=';'):
-        data.append(row)
+    # Add custom text style to the document
+    doc.styles.new('isocpeur', dxfattribs={'font': 'ISOCPEUR.ttf'})
+    doc.styles.new('arial', dxfattribs={'font': 'Arial.ttf'})
 
-    # feeder cb (circuit breaker)
-    cb = f'LS-Schalter {poles}P'
-    # feeder circuit breaker type and release type
-    if current < 63:
-        release = "-"
-        if poles == "3":
-            cb_type = next(v[2] for v in data if float(v[0]) >= current)
-        else:
-            cb_type = next(v[1] for v in data if float(v[0]) >= current)
-    else:
-        cb_type = next(v[1] for v in data if float(v[0]) >= current)
-        release = next(v[2] for v in data if float(v[0]) >= current)
+    # Define line and text styles
+    style_name = {'height': 3.5, 'color': 5, 'style': 'isocpeur'}
+    style_std = {'height': 2.5, 'color': 251, 'style': 'isocpeur'}
+    style_q = {'height': 4, 'color': 5, 'style': 'isocpeur'}
+    # style_title = {'height': 2, 'color': 5, 'style': 'arial'}
+    style_boldline = {'lineweight': 50, 'color': 7}
+    style_electro = {'lineweight': 50, 'color': 5}
+    style_thin = {'lineweight': 0, 'color': 5}
 
-    # feeder ib (german: betriebsstrom)
-    ib = ("Ir=" + f'{float(current):.1f}' + "A").replace('.', ',')
-    return cb, cb_type, release, ib
+    gen_nb_ls(doc, style_electro, style_thin, style_boldline, style_name, style_std, style_q)
 
+    # define modelspace
+    msp = doc.modelspace()
 
-def calc(parsed_data):
-    """
-    Main function that gathers all other subfunctions
-    """
-    name, power, current, voltage, phi, laying, cable, length, medium, g, maker, du_max = parsed_data
-    # calculate power and current
-    power, current = power_current(power, current, voltage, phi)
-    # now that we have current we can calculate the cable section
-    section, system, du = cable_section(voltage, length, current, phi, medium, laying, du_max)
-    # select circuit breaker
-    cb, cb_type, release, ib = circuit_breaker(current, maker, voltage)
-    computed_data = [name, power, current, voltage, phi, laying,
-                     cable, length, medium, g, maker, section, system, du, cb, cb_type, release, ib]
-    return computed_data
+    for number, value in enumerate(formatted_data):
+        # values is a dict with the attribute tag as item-key and
+        # the attribute text content as item-value.
+        name, power, g, phi, voltage, cable, section, length, du, laying, cb, cb_type, release, ib = value
+        point = get_insert_point(number)
+        values = {
+            'NAME': name,
+            'POWER': power,
+            'G': g,
+            'PHI': phi,
+            'VOLTAGE': voltage,
+            'CABLE': cable,
+            'SECTION': section,
+            'LENGTH': length,
+            'DU': du,
+            'LAYING': laying,
+            'CB': cb,
+            'CB_TYPE': cb_type,
+            'RELEASE': release,
+            'IB': ib,
+            'Q': "Q" + str(number + 1),
+        }
 
+        blockref = msp.add_blockref('NB_LS', point)
+        blockref.add_auto_attribs(values)
 
-def format_values(computed_data):
-    """
-    This function formats computed_data for export in CAD and bot answer
-    """
-    name, power, current, voltage, phi, laying, cable, length, medium, g, \
-        maker, section, system, du, cb, cb_type, release, ib = computed_data
-
-    poles = "5" if voltage > 240 else "3"
-    ref_laying = "3" if voltage > 240 else "2"
-
-    system = str(system) + "x" if system > 1 else ''
-    name = name.upper()
-    power = ("P=" + f'{float(power):.1f}' + "kW").replace('.', ',')
-    g = 'g=' + str(g).replace('.', ',')
-    phi = "cos(f)=" + str(phi).replace('.', ',')
-    voltage = "U=" + f'{float(voltage):.0f}' + "V"
-    cable = f'{cable.upper()}({medium.capitalize()})'
-    section = system + (poles + "x" + str(section).rstrip('0').rstrip('.')).replace('.', ',') + "mm²"
-    length = "L=" + f'{float(length):.0f}' + "m"
-    du = "dU=" + (str(du).replace('.', ',')) + "%"
-    laying = f'{laying.upper()}.{ref_laying}'
-
-    formatted_data = [name, power, g, phi, voltage, cable, section,
-                      length, du, laying, cb, cb_type, release, ib]
-    return formatted_data
+    # Save the drawing.
+    doc.saveas("template.dxf")
