@@ -149,4 +149,4 @@ def cad_write(formatted_data):
         blockref.add_auto_attribs(values)
 
     # Save the drawing.
-    doc.saveas("template.dxf")
+    doc.saveas("output/template.dxf")
