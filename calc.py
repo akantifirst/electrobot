@@ -94,7 +94,7 @@ def cable_section(voltage, length, current, phi, medium, laying, du_max):
     """
     data, section_ib, section_du, system_ib, system_du, system = [], '?', '?', 1, 1, 1
     laying = laying + '.3' if voltage >= 370 else laying + '.2'
-    for row in csv.reader(open(r'CU_Z70_U30.csv', 'r'), delimiter=';'):
+    for row in csv.reader(open(r'db/CU_Z70_U30.csv', 'r'), delimiter=';'):
         data.append(row)
     # find the right column based on the way of laying:
     index_laying = data[0].index(laying)
