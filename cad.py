@@ -151,5 +151,3 @@ def cad_write(formatted_data):
 
     # Save the drawing.
     doc.saveas("output/template.dxf")
-
-# cad_write()
