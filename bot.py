@@ -83,7 +83,7 @@ async def process_param(message: Message, state: FSMContext):
                          'angegeben werden.\n'
                          '<i>Beispiel: <b>uv-av-01</b></i>\n\n'
                          '<b>Kabeltyp:</b>\n\n'
-                         'Die folgende Kabeltypen werden derzeit unterstützt: NYY, NYCWY, NYM, NHXH.\n'
+                         'Folgende Kabeltypen werden derzeit unterstützt: NYY, NYCWY, NYM, NHXH.\n'
                          '<i>Beispiel: nycwy</i>\n\n'
                          '<b>Spannung des Stromkreises:</b>\n\n'
                          'Eine Zahl mit dem Suffix "v"\n'
@@ -93,7 +93,7 @@ async def process_param(message: Message, state: FSMContext):
                          '<i>Beispiel: 30m, 156m</i>\n\n'
                          '<b>Verlegeart des Kabels:</b>\n\n'
                          'Referenzverlegearten siehe /verl\n'
-                         'A1, A2, B1, B2, C1, etc\n'
+                         'A1, A2, B1, B2, C1, B1, D1, E1 usw.\n'
                          '<i>Beispiel: a1, a2, c1, f1</i>\n\n'
                          '<b>Leitermaterial:</b>\n\n'
                          'Folgende Leitermateriale werden derzeit unterstützt: Cu, Alu. \n'
@@ -103,7 +103,7 @@ async def process_param(message: Message, state: FSMContext):
                          '<i>Beispiel: abb, siemens, hager</i>\n\n'
                          '<b>Zulässiger Spannungsfall:</b>\n\n'
                          'Eine Zahl mit dem Suffix "%"\n'
-                         '<i>Beispiel: 4%, 2.5%, 0,5%</i>\n\n'
+                         '<i>Beispiel: 4%, 2.5%, 0.5%</i>\n\n'
                          '<b>Leistungsfaktor cos(f):</b>\n\n'
                          'Eine Zahl von 0,5 bis 1,0 ohne Suffix\n'
                          '<i>Beispiel: 0.76, 0.98</i>\n\n'
@@ -153,9 +153,7 @@ async def process_feeder(message: Message, state: FSMContext) -> None:
     except KeyError:
         feeder = message.text
     if feeder not in ["hv", "/hv"]:
-        print(feeder)
         pre = calc.parse_input(feeder)
-        print(pre)
         name = f"{str(pre[0].upper())}"
         load = f"P={str(pre[1]).replace(',', '.')}kW" if pre[1] != " " else f"I={str(pre[2]).replace(',', '.')}A"
         await message.answer(f'Abgang  <i>{name} {load}</i> \nerfolgreich zu Liste hinzugefügt')
@@ -163,9 +161,9 @@ async def process_feeder(message: Message, state: FSMContext) -> None:
     await state.clear()
     await state.set_state(Form.feeder)
     await message.answer(
-        f"Geben Sie die Daten des Stromkreises ein.\n"
-        f"<i>Beispiel: UV-AV-EG 23kw 56m</i>\n"
-        "Für mehr Informationen siehe /hilfe.",
+        "Geben Sie die Daten des Stromkreises ein.\n"
+        "Für mehr Informationen siehe /hilfe."
+        "<i>Beispiel: UV-AV-EG 23kw 56m</i>\n",
         reply_markup=ReplyKeyboardMarkup(
             keyboard=[
                 [
