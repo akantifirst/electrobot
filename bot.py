@@ -147,12 +147,13 @@ async def process_project(message: Message, state: FSMContext) -> None:
 async def process_laying(message: Message, state: FSMContext) -> None:
     await state.update_data(feeder=message.text)
     await state.set_state(Form.laying)
+
     await message.answer("Wählen Sie bitte den Verlegeart des Kabels.\nVerwenden Sie bitte die Schaltflächen unten:",
                          reply_markup=ReplyKeyboardMarkup(keyboard=keyboard_laying().export(), resize_keyboard=True)),
 
 
 @dp.message(F.text.casefold().in_({'/hv', 'hv'}))
-@dp.message(Form.laying, lambda message: re.match(f'{laying_types}', convert_laying(message.text.casefold())))
+@dp.message(Form.laying, lambda message: re.match(f'{laying_types}', convert_laying(message.text)))
 @dp.message(Form.feeder, lambda message:
             re.search(f'{laying_types}', message.text) and re.search(r'kw|a', message.text.casefold()))
 async def process_feeder(message: Message, state: FSMContext) -> None:
@@ -170,8 +171,8 @@ async def process_feeder(message: Message, state: FSMContext) -> None:
     await state.set_state(Form.feeder)
     await message.answer(
         "Geben Sie die Daten des Stromkreises ein.\n"
-        "Für mehr Informationen siehe /hilfe."
-        "<i>Beispiel: UV-AV-EG 23kw 56m</i>\n",
+        "Für mehr Informationen siehe /hilfe.\n"
+        "<i>Beispiel: UV-AV-EG 23kw 56m</i>",
         reply_markup=ReplyKeyboardMarkup(
             keyboard=[
                 [

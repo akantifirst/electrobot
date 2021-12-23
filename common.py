@@ -14,9 +14,9 @@ def convert_laying(short_descr: str) -> str:
     data = csv_read(r'db/LAYING.csv')
     try:
         index = [e[1] for e in data].index(short_descr)
-        return data[index][0]
+        return ' ' + str(data[index][0])
     except ValueError:
-        return 'e1'
+        return ' e1'
 
 
 def keyboard_laying():
