@@ -33,7 +33,7 @@ def parse_input(user_input):
     du_max = DU_MAX
 
     # Refine user input
-    user_input = user_input.replace(',', '.').lower().split(' ')
+    user_input = re.sub(' +', ' ', user_input.replace(',', '.').lower().split(' '))
     # get name
     if sum(c.isalpha() for c in user_input[0]) > 2 or sum(c.isdigit() for c in user_input[0]) == 0:
         name = user_input[0]
