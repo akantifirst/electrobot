@@ -4,7 +4,7 @@ from ezdxf import units
 
 def get_insert_point(number):
     """Returns x, y coordinates."""
-    x = 52 + number * 46
+    x = 32 + number * 46
     y = 110
     return x, y
 
@@ -92,9 +92,10 @@ def gen_title(doc, style_thin, style_boldline, style_title1):
     title.add_line((350.5, 0), (350.5, 12), dxfattribs=style_thin)
     title.add_line((366, 0), (366, 12), dxfattribs=style_thin)
     title.add_line((378, 0), (378, 12), dxfattribs=style_thin)
+    title.add_line((0, 0), (0, 290.4), dxfattribs=style_thin)
 
     # add constant text entities
-    title.add_text('Index', dxfattribs=style_title1).set_pos((2, 104.75), align='MIDDLE CENTER')
+    # title.add_text('Index', dxfattribs=style_title1).set_pos((2, 104.75), align='MIDDLE_CENTER')
 
 
 def cad_write(formatted_data):
@@ -112,16 +113,16 @@ def cad_write(formatted_data):
     style_name = {'height': 3.5, 'color': 5, 'style': 'isocpeur'}
     style_std = {'height': 2.5, 'color': 251, 'style': 'isocpeur'}
     style_q = {'height': 4, 'color': 5, 'style': 'isocpeur'}
-    # style_title = {'height': 2, 'color': 5, 'style': 'arial'}
+    style_title1 = {'height': 2, 'color': 5, 'style': 'arial'}
     style_boldline = {'lineweight': 50, 'color': 7}
     style_electro = {'lineweight': 50, 'color': 5}
-    style_thin = {'lineweight': 0, 'color': 5}
-
+    style_thin = {'lineweight': 0, 'color': 7}
+    gen_title(doc, style_thin, style_boldline, style_title1)
     gen_nb_ls(doc, style_electro, style_thin, style_boldline, style_name, style_std, style_q)
 
     # define modelspace
     msp = doc.modelspace()
-
+    msp.add_blockref('TITLE', (0, 0))
     for number, value in enumerate(formatted_data):
         # values is a dict with the attribute tag as item-key and
         # the attribute text content as item-value.
@@ -150,3 +151,5 @@ def cad_write(formatted_data):
 
     # Save the drawing.
     doc.saveas("output/template.dxf")
+
+# cad_write()
