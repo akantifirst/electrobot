@@ -1,12 +1,12 @@
-a1;in Elektro-Installationsrohren in wärmegedämmten Wänden
-a2;in Elektro-Installationsrohren in wärmegedämmten Wänden; Mehradrig
-b1;in Elektro-Installationsrohren auf einer Wand
-b2;in Elektro-Installationsrohren auf einer Wand; Mehradrig
-c1;direkt auf einer Wand
-d1;in Erde
+a1;Gedämmter Wand, einadr.
+a2;Gedämmter Wand, mehradr.
+b1;Auf einer Wand
+b2;Auf einer Wand, mehradr.
+c1;Direkt auf einer Wand
+d1;In Erde
 e1;Installationskanal
-f1;auf gelochter Kabelwanne mit Berührung; Einadrig
-f2;auf gelochter Kabelwanne mit Berührung; Eine Schicht; Mehradrig
-f3;auf gelochter Kabelwanne mit Berührung; Mehrere Schichte; Mehradrig
-g1;auf gelochter Kabelwanne ohne Berührung; Horizontal
-g2;auf gelochter Kabelwanne ohne Berührung; Vertikal
+f1;Kabelw. mit Berühr., einadr.
+f2;Kabelw. mit Berühr., mehradr.
+f3;Kabelw. mit Berühr., mehrsch.
+g1;Kabelw. ohne Berühr., horiz.
+g2;Kabelw. ohne Berühr., vert.
