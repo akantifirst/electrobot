@@ -1,254 +1,234 @@
 import asyncio
-from typing import Any, Dict
-from aiogram import Bot, Dispatcher, F, Router, html
+from typing import Any
+from aiogram import Bot, Dispatcher, F
 from aiogram.dispatcher.fsm.context import FSMContext
 from aiogram.dispatcher.fsm.state import State, StatesGroup
-from aiogram.types import KeyboardButton, Message, ReplyKeyboardMarkup, ReplyKeyboardRemove
-from aiogram.types import FSInputFile
-from config import TOKEN
-import calc
-import cad
+from aiogram.types import KeyboardButton, Message, ReplyKeyboardMarkup, ReplyKeyboardRemove, FSInputFile
 
-router = Router()
-project_data = {}
+import cad
+import calc
+from config import TOKEN, LAYING_TYPES, LAYING
+from common import convert_laying, keyboard_laying
+import re
+
+dp = Dispatcher()
+project_data = []
+laying_types = '|'.join(LAYING_TYPES)
+laying = LAYING
 
 
 class Form(StatesGroup):
-    start = State()
-    name = State()
-    extra_options = State()
+    feeder = State()
     laying = State()
-    add_feeder = State()
-    project_info = State()
-    maker = State()
+    project = State()
 
 
-# Entry point to fill in feeder data
-@router.message(Form.add_feeder, F.text.casefold() == "ja")
-@router.message(Form.start)
-@router.message(commands={"nshv"})
-async def command_start(message: Message, state: FSMContext) -> None:
-    await state.set_state(Form.name)
-    await message.answer(
-        f"Geben Sie bitte die Daten des Schaltschranks ein.\n"
-        f"Alles ausser Leistung (oder Strom) ist optional.\n"
-        f"<b>Beispiel:</b> <i>UV-AV-EG 23kw 56m</i>\n"
-        "Siehe /hilfe für mehr Beispiele.",
-        reply_markup=ReplyKeyboardRemove(),
-        parse_mode="HTML"
-    )
+@dp.message(F.text.casefold().in_({'/abbr', 'abbr', 'abbruch'}))
+async def process_cancel(message: Message, state: FSMContext) -> None:
+    if await state.get_state() is not None:
+        await state.clear()
+        await message.answer("Vorgang ist vom Benutzer abgebrochen", reply_markup=ReplyKeyboardRemove())
+        project_data.clear()
 
 
-# Cancel from any state
-@router.message(commands={"/abbr"})
-@router.message(F.text.casefold() == "abbr")
-@router.message(F.text.casefold() == "abbruch")
-async def cancel_handler(message: Message, state: FSMContext) -> None:
-    """
-    Allow user to cancel any action
-    """
+@dp.message(F.text.casefold().in_({'/start', '/hilfe', 'start', 'hilfe'}))
+async def process_help(message: Message, state: FSMContext):
     await state.clear()
-    await message.answer(
-        "Vorgang abgebrochen",
-        reply_markup=ReplyKeyboardRemove(),
-    )
+    await message.answer('<b>Willkomen zu Electrobot</b>.\n'
+                         '\n'
+                         'Dieses Program ist geeignet um schnell den Kabelquerschnitt, den Spannungsfall, '
+                         'oder den LS-Schalter sowie andere Parameter für ein oder auch für mehrere '
+                         'Stromkreise zu ermitteln. Das Programm hat 2 Modi:\n',
+                         reply_markup=ReplyKeyboardRemove(),
+                         parse_mode='HTML')
+
+    await message.answer('<b>Modus 1. Schnelle Kalkulation</b>\n\n'
+                         'Schnelle Kalkulation eines Spannungsabgangs mit Ergebniss im Textform. '
+                         'Tragen Sie bitte einfach die Nennleistung oder den Nennstrom ein. '
+                         'Groß- und Kleinschreibung spielen hier keine Rolle.\n\n'
+                         'Beispiel: <i>"23kw"</i> <b>oder</b> <i>"45a"</i>\n\n'
+                         'Zusätzlich kann man andere Parameter, wie z.B. Kabellänge, '
+                         'Verlegeart, oder zulässiger Spannungsfall, definieren.\n\n'
+                         'Еine vollständige Liste der möglichen Optionen ist per Befehl /param verfügbar. '
+                         'Wenn die in der Benutzereingabe fehlen, werden in der Berechnung '
+                         'die Ursprungsparameter (siehe /optionen) benutzt.\n',
+                         reply_markup=ReplyKeyboardRemove(),
+                         parse_mode='HTML')
+
+    await message.answer('<b>Modus 2. Hauptverteilerberechnung</b>\n\n'
+                         'Hauptverteilerberechnung (mehrere Spannungsabgänge) mit Ergebnis im Form eines '
+                         'Schemas im <b>CAD</b> Dateiformat.\n\n'
+                         'Um zu diesen Modi zu wechseln, muss der Befehl <b>"/hv"</b> eingegeben werden. '
+                         'In diesem Modi ist die sequentielle Eingabe von mehreren Stromkreisen möglich. '
+                         'Die Parameter jedes Stromkreises werden in einzeilige Eingabe angegeben, wie '
+                         'auch im Modi 1.\n\n'
+                         'Nach Eingabe der Parameter des Stromkreises wird der Benutzer aufgefordert, einen '
+                         'anderen Stromkreis einzugeben oder die Berechnung abzuschliessen. Nachdem alle '
+                         'Stromkreise eingegeben sind, muss der Nummer und der Name des Projekts eingegeben '
+                         'werden.\n\n'
+                         'Im Schluss bekommt man die Berechnung im Form eines Schemata sowie eine tabellarische '
+                         'Auflistung aller Stromkreise.',
+                         reply_markup=ReplyKeyboardRemove(),
+                         parse_mode='HTML')
 
 
-# After all feeder data is provided, the user must provide project information
-@router.message(Form.add_feeder, F.text.casefold() == "nein")
-async def project_info(message: Message, state: FSMContext) -> None:
-    await state.set_state(Form.project_info)
-    await message.answer(
-        "Geben Sie bitte die Projektnummer und den Namen ein:\n"
-        "<b>Beispiel:</b> <i>1025 Philharmonie Gasteig</i>",
-        reply_markup=ReplyKeyboardRemove(),
-        parse_mode="HTML"
-    )
-
-
-# after all details to current feeder are provided,
-# or if the user doesn't want to specify extra options,
-# he is asked if he wants to add the next feeder
-@router.message(Form.maker)
-@router.message(Form.extra_options, F.text.casefold() == "nein")
-async def next_feeder(message: Message, state: FSMContext) -> None:
-    if message.text.casefold() not in ["ja", "nein"]:
-        await state.update_data(maker=message.text)
-    data = await state.get_data()
-    try:
-        await update_feeder(data=data)
-    except TypeError:
-        pass
+@dp.message(F.text.casefold().in_({'/param', 'param'}))
+async def process_param(message: Message, state: FSMContext):
     await state.clear()
-    await state.set_state(Form.add_feeder)
-    await message.answer(
-        f"Gut. Wollen Sie noch einen Spannungsabgang hinzufügen?",
-        reply_markup=ReplyKeyboardMarkup(
-            keyboard=[
-                [
-                    KeyboardButton(text="Ja"),
-                    KeyboardButton(text="Nein"),
-                    KeyboardButton(text="Abbruch"),
-                ]
-            ],
-            resize_keyboard=True,
-        ),
-    )
+    await message.answer('<b>Stromkreis Parameter</b>\n\n'
+                         'Die folgende Stromkreisparameter kann man '
+                         '(mit Leerzeichen getrennt) optional eingeben:\n\n'
+                         '<b>Unterverteiler Name:</b>\n\n'
+                         'Beliebige Name. Wenn vorhanden, muss ohne Leerzeichen als erstes Wort im Eingabe '
+                         'angegeben werden.\n'
+                         '<i>Beispiel: <b>uv-av-01</b></i>\n\n'
+                         '<b>Kabeltyp:</b>\n\n'
+                         'Die folgende Kabeltypen werden derzeit unterstützt: NYY, NYCWY, NYM, NHXH.\n'
+                         '<i>Beispiel: nycwy</i>\n\n'
+                         '<b>Spannung des Stromkreises:</b>\n\n'
+                         'Eine Zahl mit dem Suffix "v"\n'
+                         '<i>Beispiel: 400v, 415v, 230v, 220v</i>\n\n'
+                         '<b>Kabellänge des Stromkreises:</b>\n\n'
+                         'Eine Zahl mit dem Suffix "m"\n'
+                         '<i>Beispiel: 30m, 156m</i>\n\n'
+                         '<b>Verlegeart des Kabels:</b>\n\n'
+                         'Referenzverlegearten siehe /verl\n'
+                         'A1, A2, B1, B2, C1, etc\n'
+                         '<i>Beispiel: a1, a2, c1, f1</i>\n\n'
+                         '<b>Leitermaterial:</b>\n\n'
+                         'Folgende Leitermateriale werden derzeit unterstützt: Cu, Alu. \n'
+                         '<i>Beispiel: cu, alu</i>\n\n'
+                         '<b>Hersteller des Schutzorgans:</b>\n\n'
+                         'ABB, Siemens, Hager\n'
+                         '<i>Beispiel: abb, siemens, hager</i>\n\n'
+                         '<b>Zulässiger Spannungsfall:</b>\n\n'
+                         'Eine Zahl mit dem Suffix "%"\n'
+                         '<i>Beispiel: 4%, 2.5%, 0,5%</i>\n\n'
+                         '<b>Leistungsfaktor cos(f):</b>\n\n'
+                         'Eine Zahl von 0,5 bis 1,0 ohne Suffix\n'
+                         '<i>Beispiel: 0.76, 0.98</i>\n\n'
+                         '<b>Gleichzeitigkeitsfaktor:</b>\n\n'
+                         'eine Zahl von 0,1 bis 1,0 mit dem Suffix "g"\n'
+                         '<i>Beispiel: <b>0.65g, 0.4g</b></i>\n\n'
+
+                         'Alle Parameter, ausser Nennstrom oder Nennleistung, sind optional. '
+                         'Wenn die in Benutzereingabe fehlen, werden für die Berechnung'
+                         ' die Ursprungparameter benutzt.'
+                         ' Die Ursprungparameter siehe \n/optionen.',
+                         reply_markup=ReplyKeyboardRemove(),
+                         parse_mode='HTML')
 
 
-# After required details such as name are provided,
-# user is asked if he wants to provide additional details to this feeder
-@router.message(Form.name)
-async def extra_options(message: Message, state: FSMContext) -> None:
-    await state.update_data(name=message.text)
-    try:
-        await state.set_state(Form.extra_options)
-        await message.answer(
-            f"Zusätzliche Parameter für den Schaltschrank\n"
-            f"<b>{html.quote(message.text)}</b> angeben?",
-            reply_markup=ReplyKeyboardMarkup(
-                keyboard=[
-                    [
-                        KeyboardButton(text="Ja"),
-                        KeyboardButton(text="Nein"),
-                        KeyboardButton(text="Abbruch"),
-                    ]
-                ],
-                resize_keyboard=True,
-                parse_mode="HTML"
-            ),
-        )
-    except (TypeError, ValueError):
-        await message.reply('Please, review your request [bot]')
+@dp.message(F.text.casefold().in_({'/opt', 'opt'}))
+async def process_param(message: Message, state: FSMContext):
+    await state.clear()
+    await message.answer('Diese Sektion ist derzeit in Bearbeitung ',
+                         reply_markup=ReplyKeyboardRemove(),
+                         parse_mode='HTML')
 
 
-# After project info is provided, the user must give details about equipment maker
-@router.message(Form.laying)
-async def maker(message: Message, state: FSMContext) -> None:
-    await state.update_data(laying=message.text)
-    await state.set_state(Form.maker)
-    await message.answer(
-        "Bitte den Hersteller des Schutzorgans angeben."
-        "\nVerwenden Sie bitte die Schaltflächen unten:",
-        reply_markup=ReplyKeyboardMarkup(
-            keyboard=[
-                [
-                    KeyboardButton(text="ABB"),
-                    KeyboardButton(text="Siemens"),
-                    KeyboardButton(text="Hager")
-                ]
-            ],
-            resize_keyboard=True,
-        ),
-    )
+@dp.message(Form.feeder, F.text.casefold() == "fertig")
+async def process_project(message: Message, state: FSMContext) -> None:
+    await state.set_state(Form.project)
+    await message.answer("Geben Sie bitte die Projektnummer\nund den Namen ein:\n"
+                         "<i>Beispiel: 1025 Philharmonie Gasteig</i>",
+                         reply_markup=ReplyKeyboardRemove())
 
 
-# after extra options are chosen, user asked to provide laying art
-@router.message(Form.extra_options, F.text.casefold() == "ja")
-async def laying(message: Message, state: FSMContext) -> None:
+@dp.message(Form.feeder, lambda message:
+            not re.search(f'{laying_types}', message.text) and re.search(r'kw|a', message.text.casefold()))
+async def process_laying(message: Message, state: FSMContext) -> None:
+    await state.update_data(feeder=message.text)
     await state.set_state(Form.laying)
+    await message.answer("Wählen Sie bitte den Verlegeart des Kabels.\nVerwenden Sie bitte die Schaltflächen unten:",
+                         reply_markup=ReplyKeyboardMarkup(keyboard=keyboard_laying().export(), resize_keyboard=True)),
+
+
+@dp.message(F.text.casefold().in_({'/hv', 'hv'}))
+@dp.message(Form.laying, lambda message: re.match(f'{laying_types}', convert_laying(message.text.casefold())))
+@dp.message(Form.feeder, lambda message: re.search(r'kw|a', message.text.casefold()))
+async def process_feeder(message: Message, state: FSMContext) -> None:
+    try:
+        feeder = f'{(await state.get_data())["feeder"]} {convert_laying(message.text)}'
+    except KeyError:
+        feeder = message.text
+    if feeder not in ["hv", "/hv"]:
+        print(feeder)
+        pre = calc.parse_input(feeder)
+        print(pre)
+        name = f"{str(pre[0].upper())}"
+        load = f"P={str(pre[1]).replace(',', '.')}kW" if pre[1] != " " else f"I={str(pre[2]).replace(',', '.')}A"
+        await message.answer(f'Abgang  <i>{name} {load}</i> \nerfolgreich zu Liste hinzugefügt')
+        await update_feeder(data=pre, set_exactly=False)
+    await state.clear()
+    await state.set_state(Form.feeder)
     await message.answer(
-        "Wählen Sie bitte den Verlegeart des Kabels.\nVerwenden Sie bitte die Schaltflächen unten:",
+        f"Geben Sie die Daten des Stromkreises ein.\n"
+        f"<i>Beispiel: UV-AV-EG 23kw 56m</i>\n"
+        "Für mehr Informationen siehe /hilfe.",
         reply_markup=ReplyKeyboardMarkup(
             keyboard=[
-                [KeyboardButton(text="Im Erde")],
-                [KeyboardButton(text="In einem Installationskanal")],
-                [KeyboardButton(text="Auf einer Kabelwanne")],
-                [KeyboardButton(text="Auf einer gelochter Kabelwanne")],
-                [KeyboardButton(text="Im Luft")],
-                [KeyboardButton(text="In wärmegedämmter Wand")],
-                [KeyboardButton(text="Abbruch")]
+                [
+                    KeyboardButton(text="Fertig"),
+                    KeyboardButton(text="Abbruch")
+                ]
             ],
             resize_keyboard=True,
         ),
+        parse_mode="HTML"
     )
 
 
-# After maker is provided, the calculation results are sent to user.
-@router.message(Form.project_info)
-async def send_results(message: Message, state: FSMContext) -> None:
+@dp.message(Form.project)
+async def process_result(message: Message, state: FSMContext):
     await state.clear()
-    await state.update_data(project=message.text)
+    await state.set_data({'project': message.text})
     data = await state.get_data()
     try:
-        await update_feeder(data=data)
+        await update_feeder(data["project"], set_exactly=False)
     except TypeError:
         pass
-    await message.answer(
-        "Fertig! Unten ist das NSHV-Schema und\n"
-        "die NSHV-Berechnung in Tabellenform",
-        reply_markup=ReplyKeyboardRemove()
-        )
+    await message.answer(f"Fertig! Unten ist das NSHV-Schema und\n"
+                         f"die NSHV-Berechnung für das Projekt\n"
+                         f"{message.text}",
+                         reply_markup=ReplyKeyboardRemove())
     await show_summary(message=message)
     project_data.clear()
 
 
-# if input is incorrect
-@router.message(Form.add_feeder)
-@router.message(Form.extra_options)
-async def review_request(message: Message) -> None:
-    await message.reply("Überpüfen sie bitte die Richtigkeit ihrer Angaben.")
+@dp.message(Form.laying)
+@dp.message(Form.feeder)
+@dp.message(lambda message: not re.search(r'kw|a', message.text.casefold()))
+async def process_error(message: Message) -> None:
+    await message.answer('Überprüfen Sie bitte die Richtigkeit Ihrer Angaben. '
+                         'Probieren Sie es noch mal:', reply_markup=ReplyKeyboardRemove())
 
 
-# append current feeder to project dictionary
-async def update_feeder(data: Dict[str, Any]) -> None:
-    number = len(project_data) + 1
-    project_data[number] = data
-    print(project_data)
+async def update_feeder(data: [str, Any], set_exactly: bool) -> None:
+    if set_exactly:
+        project_data[0] = data
+    else:
+        project_data.append(data)
 
 
-# show content of project dictionary
-@router.message(commands={"log"})
 async def show_summary(message: Message) -> None:
-    list_data = [' '.join([text for key, text in element.items()]) for number, element in project_data.items()]
-    print(list_data)
     fdata = []
-    for feeder in list_data[:-1]:
-        parsed_data = calc.parse_input(feeder)
-        computed_data = calc.calc(parsed_data)
+    for feeder in project_data[:-1]:
+        computed_data = calc.calc(feeder)
         fdata.append(calc.format_values(computed_data))
-        print(fdata)
     cad.cad_write(fdata)
-
-    dxf_name = FSInputFile("output/template.dxf", filename="Schema.dxf")
-    await message.answer_document(dxf_name)
     fdata.clear()
-    await message.answer(str(list_data))
+    dxf_name = FSInputFile("output/template.dxf", filename=f"{project_data[-1]}.dxf")
+    await message.answer_document(dxf_name)
 
 
-@router.message(commands=['help'])
-async def process_help(message: Message):
-    await message.reply('<b>12kw  => </b> <i>12kW 400V cos(φ)=0.95</i>\n'
-                        '<b>12kW 0.8  => </b> <i>12kW 400V cos(φ)=0.8</i>\n'
-                        '<b>12kW 230V 0.9  => </b> <i>12kW 230V cos(φ)=0.9</i>\n'
-                        '<b>35a 230V 0.6  => </b> <i>35A 230V cos(φ)=0.6</i>\n'
-                        '<b>12  => </b> <i>12kW 400V cos(φ)=0.95</i>', parse_mode='HTML')
-
-
-@router.message(commands=['laying'])
-async def process_laying(message: Message):
-    await message.reply('<b>A1</b> <i> - in Installationsrohren in wärmegedämmten Wänden</i>\n'
-                        '<b>A2</b> <i> - in Installationsrohren in wärmegedämmten Wänden; Mehradrig</i>\n'
-                        '<b>B1</b> <i> - in Installationsrohren auf einer Wand</i>\n'
-                        '<b>B2</b> <i> - in Installationsrohren auf einer Wand; Mehradrig</i>\n'
-                        '<b>C1</b> <i> - direkt auf einer Wand</i>\n'
-                        '<b>D1</b> <i> - in Erde</i>\n'
-                        '<b>E1</b> <i> - Installationskanal</i>\n'
-                        '<b>F1</b> <i> - auf gelochter Kabelwanne mit Berührung; Einadrig</i>\n'
-                        '<b>F2</b> <i> - auf gel. Kabelwanne mit Berührung; Eine Schicht; Mehradrig</i>\n'
-                        '<b>F3</b> <i> - auf gel. Kabelwanne mit Berührung; Mehrere Schichte; Mehradrig</i>\n'
-                        '<b>G1</b> <i> - auf gel. Kabelwanne ohne Berührung; Horizontal</i>\n'
-                        '<b>G2</b> <i> - auf gel. Kabelwanne ohne Berührung; Vertikal</i>\n', parse_mode='HTML')
-
-
-@router.message()
-async def echo_message(message: Message):
-    # Handling incorrect user input
+@dp.message(state=None)
+async def process_message(message: Message):
     try:
         parsed_data = calc.parse_input(message.text)
         computed_data = calc.calc(parsed_data)
         fdata = calc.format_values(computed_data)
-        name, power, g, phi, voltage, cable, section, length, du, laying, cb, cb_type, release, ib = fdata
+        name, power, g, phi, voltage, cable, section, length, du, laying_simple, cb, cb_type, release, ib = fdata
         await message.answer(f'<code>Verteiler:     {name}\n'
                              f'Leistung:      {power}\n'
                              f'Gleichz.-keit: {g}\n'
@@ -258,7 +238,7 @@ async def echo_message(message: Message):
                              f'Querschnitt:   {section}\n'
                              f'Kabellänge:    {length}\n'
                              f'Spannungsfall: {du}\n'
-                             f'Verlegeart:    {laying}\n'
+                             f'Verlegeart:    {laying_simple}\n'
                              f'Schutzorgan:   {cb}\n'
                              f'S.-organ Typ:  {cb_type}\n'
                              f'Auslöser:      {release}\n'
@@ -269,12 +249,5 @@ async def echo_message(message: Message):
         await message.reply('Please, review your request [bot]')
 
 
-async def main():
-    bot = Bot(token=TOKEN, parse_mode="HTML")
-    dp = Dispatcher()
-    dp.include_router(router)
-    await dp.start_polling(bot)
-
-
 if __name__ == "__main__":
-    asyncio.run(main())
+    asyncio.run(dp.start_polling(Bot(token=TOKEN, parse_mode="HTML")))
