@@ -1,20 +1,26 @@
+import re
 import asyncio
 from typing import Any
 from aiogram import Bot, Dispatcher, F
 from aiogram.dispatcher.fsm.context import FSMContext
 from aiogram.dispatcher.fsm.state import State, StatesGroup
 from aiogram.types import KeyboardButton, Message, ReplyKeyboardMarkup, ReplyKeyboardRemove, FSInputFile
-
-import cad
-import calc
 from config import TOKEN, LAYING_TYPES, LAYING
 from common import convert_laying, keyboard_laying
-import re
+import cad
+import calc
 
 dp = Dispatcher()
 project_data = []
 laying_types = '|'.join(LAYING_TYPES)
 laying = LAYING
+
+# TODO: fix error when multiple spaces in input
+#  fix error when laying types are not separated by space
+#  add "options" section
+#  add/update frame CAD drawing function
+#  add possibility expand frame based on number of feeders
+#  add possibility to export pdf
 
 
 class Form(StatesGroup):
