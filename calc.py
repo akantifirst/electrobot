@@ -1,6 +1,7 @@
-import csv
+from common import csv_read
 from math import sqrt, sin, acos
 from config import *
+import re
 
 # BUG: du has no effect with bigger power e.g. 500kw 300m
 
@@ -60,13 +61,13 @@ def parse_input(user_input):
                 maker = str(word)  # get maker
             elif word[len(word) - 1] == '%':
                 du_max = float(word[:-1])  # get du_max
-            elif 0.6 <= float(word) <= 1.0:
+            elif not re.search('[a-zA-Z]', word) and 0.6 <= float(word) <= 1.0:
                 phi = float(word)
 
         parsed_data = [name, power, current, voltage, phi, laying, cable, length, medium, g, maker, du_max]
         return parsed_data
     except ValueError:
-        print(f'Please review your request: [parse_input]')
+        print(f'Überpüfen sie bitte die Richtigkeit ihrer Angaben.')
 
 
 def power_current(power, current, voltage, phi):
@@ -94,8 +95,7 @@ def cable_section(voltage, length, current, phi, medium, laying, du_max):
     """
     data, section_ib, section_du, system_ib, system_du, system = [], '?', '?', 1, 1, 1
     laying = laying + '.3' if voltage >= 370 else laying + '.2'
-    for row in csv.reader(open(r'db/CU_Z70_U30.csv', 'r'), delimiter=';'):
-        data.append(row)
+    data = csv_read(r'db/CU_Z70_U30.csv')
     # find the right column based on the way of laying:
     index_laying = data[0].index(laying)
     current_list = [e[index_laying] for e in data][1:]
@@ -106,7 +106,7 @@ def cable_section(voltage, length, current, phi, medium, laying, du_max):
             section_ib = next(data[i + 1][0] for i, v in enumerate(current_list) if float(v) >= current / system_ib)
             break
         except (ValueError, IndexError):
-            print(r'Cant find cable section - check index or value')
+            print(r'Kann den Kabelquerschnitt nicht berechnen - überprüfen sie bitte den Index oder den Wert.')
         except StopIteration:
             continue
     # check du condition
@@ -140,11 +140,9 @@ def circuit_breaker(current, maker, voltage):
     """
     Finds circuit breaker and tripping unit
     """
-    data = []
     db = f'db/{maker.upper()}.csv'
     poles = "3" if voltage > 240 or current > 63 else "1"
-    for row in csv.reader(open(db, 'r'), delimiter=';'):
-        data.append(row)
+    data = csv_read(db)
 
     # feeder cb (circuit breaker)
     cb = f'LS-Schalter {poles}P'
