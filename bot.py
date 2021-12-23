@@ -12,15 +12,16 @@ import calc
 
 dp = Dispatcher()
 project_data = []
-laying_types = '|'.join(LAYING_TYPES)
+laying_types = ' ' + '| '.join(LAYING_TYPES)
 laying = LAYING
 
-# TODO: fix error when multiple spaces in input
-#  fix error when laying types are not separated by space
+# TODO:
 #  add "options" section
 #  add/update frame CAD drawing function
 #  add possibility expand frame based on number of feeders
-#  add possibility to export pdf
+#  add possibility to export pdf (solve scaling problem with Matplotlib backend)
+#  add generation of a report in Excel with xlwings
+#  add generation of a report in pdf
 
 
 class Form(StatesGroup):
@@ -152,7 +153,8 @@ async def process_laying(message: Message, state: FSMContext) -> None:
 
 @dp.message(F.text.casefold().in_({'/hv', 'hv'}))
 @dp.message(Form.laying, lambda message: re.match(f'{laying_types}', convert_laying(message.text.casefold())))
-@dp.message(Form.feeder, lambda message: re.search(r'kw|a', message.text.casefold()))
+@dp.message(Form.feeder, lambda message:
+            re.search(f'{laying_types}', message.text) and re.search(r'kw|a', message.text.casefold()))
 async def process_feeder(message: Message, state: FSMContext) -> None:
     try:
         feeder = f'{(await state.get_data())["feeder"]} {convert_laying(message.text)}'
