@@ -143,7 +143,7 @@ async def process_project(message: Message, state: FSMContext) -> None:
 
 
 @dp.message(Form.feeder, lambda message:
-            not re.search(f'{laying_types}', message.text) and re.search(r'kw|a', message.text.casefold()))
+            not re.search(f'{laying_types}', message.text) and re.search(r'kw |kw$|a$|a ', message.text.casefold()))
 async def process_laying(message: Message, state: FSMContext) -> None:
     await state.update_data(feeder=message.text)
     await state.set_state(Form.laying)
@@ -155,7 +155,7 @@ async def process_laying(message: Message, state: FSMContext) -> None:
 @dp.message(F.text.casefold().in_({'/hv', 'hv'}))
 @dp.message(Form.laying, lambda message: re.match(f'{laying_types}', convert_laying(message.text)))
 @dp.message(Form.feeder, lambda message:
-            re.search(f'{laying_types}', message.text) and re.search(r'kw|a', message.text.casefold()))
+            re.search(f'{laying_types}', message.text) and re.search(r'kw |kw$|a$|a ', message.text.casefold()))
 async def process_feeder(message: Message, state: FSMContext) -> None:
     try:
         feeder = f'{(await state.get_data())["feeder"]} {convert_laying(message.text)}'
