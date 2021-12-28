@@ -1,5 +1,7 @@
 import ezdxf
-from ezdxf import units
+from ezdxf import units, zoom
+from ast import literal_eval as make_tuple
+from common import csv_read
 
 
 def get_insert_point(number):
@@ -57,9 +59,9 @@ def gen_nb_ls(doc, style_electro, style_thin, style_boldline, style_name, style_
     nb_ls.add_attdef('Q', dxfattribs=style_q).set_pos((-2.8, 13), align='RIGHT')
 
 
-def gen_title(doc, style_thin, style_boldline, style_title1):
+def gen_title(doc, style_thin, style_boldline, style_title1, style_title2, style_title3, style_title4):
     title = doc.blocks.new(name='TITLE')
-
+    gen_logo(title)
     # Set millimeter as 'NB_LS' block units
     title.units = units.MM
 
@@ -92,10 +94,83 @@ def gen_title(doc, style_thin, style_boldline, style_title1):
     title.add_line((350.5, 0), (350.5, 12), dxfattribs=style_thin)
     title.add_line((366, 0), (366, 12), dxfattribs=style_thin)
     title.add_line((378, 0), (378, 12), dxfattribs=style_thin)
-    title.add_line((0, 0), (0, 290.4), dxfattribs=style_thin)
+
+    # Draw main frame
+    title.add_lwpolyline(((0, 0), (0, 283), (393, 283), (393, 0), (0, 0)), dxfattribs=style_boldline)
 
     # add constant text entities
-    # title.add_text('Index', dxfattribs=style_title1).set_pos((2, 104.75), align='MIDDLE_CENTER')
+    title.add_text('Münsterplatz 11, 78462 Konstanz', dxfattribs=style_title1).set_pos((151.7, 15.1), align='LEFT')
+    title.add_text('Tel / Fax: 07531-1302-0/33', dxfattribs=style_title1).set_pos((151.7, 12.7), align='LEFT')
+    title.add_text('www.neher-butz-plus.de', dxfattribs=style_title1).set_pos((151.7, 10.25), align='LEFT')
+    title.add_text('ib@neher-butz-plus.de', dxfattribs=style_title1).set_pos((151.7, 7.8), align='LEFT')
+    title.add_text('Uhlandstr. 5, 89250 Senden', dxfattribs=style_title1).set_pos((241.3, 15.1), align='RIGHT')
+    title.add_text('Tel / Fax: 07307-92110-0/99', dxfattribs=style_title1).set_pos((241.3, 12.7), align='RIGHT')
+    title.add_text('www.neher-butz-plus.de', dxfattribs=style_title1).set_pos((241.3, 10.25), align='RIGHT')
+    title.add_text('ulm@neher-butz-plus.de', dxfattribs=style_title1).set_pos((241.3, 7.8), align='RIGHT')
+    title.add_text('Art der Änderung', dxfattribs=style_title2).set_pos((93.0, 26.0), align='CENTER')
+    title.add_text('Name', dxfattribs=style_title2).set_pos((30.0, 26.0), align='CENTER')
+    title.add_text('Datum', dxfattribs=style_title2).set_pos((18.0, 26.0), align='CENTER')
+    title.add_text('Index', dxfattribs=style_title2).set_pos((6.0, 26.0), align='CENTER')
+    title.add_text('Index', dxfattribs=style_title2).set_pos((317.0, 8.0), align='CENTER')
+    title.add_text('Maßstab', dxfattribs=style_title2).set_pos((329.25, 8.0), align='CENTER')
+    title.add_text('Datum', dxfattribs=style_title2).set_pos((343.0, 8.0), align='CENTER')
+    title.add_text('Gezeichnet', dxfattribs=style_title2).set_pos((358.25, 8.0), align='CENTER')
+    title.add_text('Geprüft', dxfattribs=style_title2).set_pos((372.0, 8.0), align='CENTER')
+    title.add_text('Blatt / von', dxfattribs=style_title2).set_pos((385.5, 8.0), align='CENTER')
+    title.add_text('Blattgröße', dxfattribs=style_title2).set_pos((364.0, 26.0), align='CENTER')
+    title.add_text('-', dxfattribs=style_title4).set_pos((329.25, 1.5), align='CENTER')
+    title.add_text('Planinhalt', dxfattribs=style_title2).set_pos((244.5, 20.0), align='LEFT')
+    title.add_text('Projekt', dxfattribs=style_title2).set_pos((244.5, 26.0), align='LEFT')
+    title.add_text('Dateiname', dxfattribs=style_title2).set_pos((196.5, 2.3), align='CENTER')
+
+    title.add_attdef('PlANCODIERUNG', dxfattribs=style_title2).set_pos((244.5, 8.0), align='LEFT')
+    title.add_attdef('DATEINAME', dxfattribs=style_title2).set_pos((244.5, 2.0), align='LEFT')
+    title.add_attdef('BLATTGROESSE', dxfattribs=style_title3).set_pos((383.5, 25.75), align='CENTER')
+    title.add_attdef('INDEX', dxfattribs=style_title4).set_pos((317.0, 1.5), align='CENTER')
+    title.add_attdef('DATUM', dxfattribs=style_title2).set_pos((343.0, 2.0), align='CENTER')
+    title.add_attdef('GEZEICHNET', dxfattribs=style_title2).set_pos((358.25, 2.0), align='CENTER')
+    title.add_attdef('GEPRUEFT', dxfattribs=style_title2).set_pos((372.0, 2.0), align='CENTER')
+    title.add_attdef('BLATT_VON', dxfattribs=style_title2).set_pos((385.5, 2.0), align='CENTER')
+    title.add_attdef('PROJEKT', dxfattribs=style_title3).set_pos((308.75, 25.75), align='CENTER')
+    title.add_attdef('PLANINHALT', dxfattribs=style_title3).set_pos((318.0, 18.0), align='CENTER')
+    title.add_attdef('MODELNAME', dxfattribs=style_title2).set_pos((287.25, 8.0), align='CENTER')
+    title.add_attdef('DATEINAME', dxfattribs=style_title2).set_pos((287.25, 2.3), align='CENTER')
+    title.add_attdef('I1_AENDERUNG', dxfattribs=style_title2).set_pos((39.0, 20.0), align='LEFT')
+    title.add_attdef('I1_DATUM', dxfattribs=style_title2).set_pos((18.0, 20.0), align='CENTER')
+    title.add_attdef('I1_NAME', dxfattribs=style_title2).set_pos((30.0, 20.0), align='CENTER')
+    title.add_attdef('INDEX1', dxfattribs=style_title2).set_pos((6.0, 20.0), align='CENTER')
+    title.add_attdef('I2_AENDERUNG', dxfattribs=style_title2).set_pos((39.0, 14.0), align='LEFT')
+    title.add_attdef('I2_DATUM', dxfattribs=style_title2).set_pos((18.0, 14.0), align='CENTER')
+    title.add_attdef('I2_NAME', dxfattribs=style_title2).set_pos((30.0, 14.0), align='CENTER')
+    title.add_attdef('INDEX2', dxfattribs=style_title2).set_pos((6.0, 14.0), align='CENTER')
+    title.add_attdef('I3_AENDERUNG', dxfattribs=style_title2).set_pos((39.0, 8.0), align='LEFT')
+    title.add_attdef('I3_DATUM', dxfattribs=style_title2).set_pos((18.0, 8.0), align='CENTER')
+    title.add_attdef('I3_NAME', dxfattribs=style_title2).set_pos((30.0, 8.0), align='CENTER')
+    title.add_attdef('INDEX3', dxfattribs=style_title2).set_pos((6.0, 8.0), align='CENTER')
+    title.add_attdef('I4_DATUM', dxfattribs=style_title2).set_pos((18.0, 2.0), align='CENTER')
+    title.add_attdef('I4_NAME', dxfattribs=style_title2).set_pos((30.0, 2.0), align='CENTER')
+    title.add_attdef('INDEX4', dxfattribs=style_title2).set_pos((6.0, 2.0), align='CENTER')
+    title.add_attdef('I4_AENDERUNG', dxfattribs=style_title2).set_pos((39.0, 2.0), align='LEFT')
+
+
+def gen_logo(msp):
+    # Load vector NB Logo coordinates
+    data = csv_read(r'db/LOGO.csv')
+
+    green_hatch = msp.add_hatch(color=136)
+    gray_hatch = msp.add_hatch(color=252)
+
+    for number, row in enumerate(data):
+        print(number, row)
+        row = [make_tuple(e) for e in row]
+        print(number, row)
+        if number == 0:
+            green_hatch.paths.add_polyline_path(row, is_closed=True)
+        else:
+            if number < 11:
+                gray_hatch.paths.add_polyline_path(row, is_closed=True)
+            else:
+                gray_hatch.paths.add_polyline_path(row, is_closed=True, flags=ezdxf.const.BOUNDARY_PATH_OUTERMOST)
 
 
 def cad_write(formatted_data):
@@ -113,16 +188,23 @@ def cad_write(formatted_data):
     style_name = {'height': 3.5, 'color': 5, 'style': 'isocpeur'}
     style_std = {'height': 2.5, 'color': 251, 'style': 'isocpeur'}
     style_q = {'height': 4, 'color': 5, 'style': 'isocpeur'}
-    style_title1 = {'height': 2, 'color': 5, 'style': 'arial'}
-    style_boldline = {'lineweight': 50, 'color': 7}
+    style_title1 = {'height': 1.45, 'color': 7, 'style': 'arial'}
+    style_title2 = {'height': 2.0, 'color': 7, 'style': 'arial'}
+    style_title3 = {'height': 2.5, 'color': 7, 'style': 'arial'}
+    style_title4 = {'height': 3.0, 'color': 7, 'style': 'arial'}
+    style_boldline = {'lineweight': 40, 'color': 7}
     style_electro = {'lineweight': 50, 'color': 5}
     style_thin = {'lineweight': 0, 'color': 7}
-    gen_title(doc, style_thin, style_boldline, style_title1)
+    gen_title(doc, style_thin, style_boldline, style_title1, style_title2, style_title3, style_title4)
     gen_nb_ls(doc, style_electro, style_thin, style_boldline, style_name, style_std, style_q)
 
     # define modelspace
     msp = doc.modelspace()
-    msp.add_blockref('TITLE', (0, 0))
+    zoom.extents(msp)
+
+    msp.add_lwpolyline(((0, 0), (0, 297), (420, 297), (420, 0)))
+    blockref1 = msp.add_blockref('TITLE', (20, 7))
+    blockref1.add_auto_attribs({'PROJEKT': '930 Stala'})
     for number, value in enumerate(formatted_data):
         # values is a dict with the attribute tag as item-key and
         # the attribute text content as item-value.
