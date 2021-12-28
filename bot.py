@@ -7,6 +7,7 @@ from aiogram.dispatcher.fsm.state import State, StatesGroup
 from aiogram.types import KeyboardButton, Message, ReplyKeyboardMarkup, ReplyKeyboardRemove, FSInputFile
 from config import TOKEN, LAYING_TYPES, LAYING
 from common import convert_laying, keyboard_laying
+from export import generate_pdf
 import cad
 import calc
 
@@ -147,7 +148,8 @@ async def process_project(message: Message, state: FSMContext) -> None:
 
 
 @dp.message(Form.feeder, lambda message:
-            not re.search(f'{laying_types}', message.text) and re.search(r'[0-9]kw |[0-9]kw$|[0-9]a$|[0-9]a ', message.text.casefold()))
+            not re.search(f'{laying_types}', message.text) and re.search(r'[0-9]kw |[0-9]kw$|[0-9]a$|[0-9]a ',
+                                                                         message.text.casefold()))
 async def process_laying(message: Message, state: FSMContext) -> None:
     await state.update_data(feeder=message.text)
     await state.set_state(Form.laying)
@@ -159,7 +161,8 @@ async def process_laying(message: Message, state: FSMContext) -> None:
 @dp.message(F.text.casefold().in_({'/hv', 'hv'}))
 @dp.message(Form.laying, lambda message: re.match(f'{laying_types}', convert_laying(message.text)))
 @dp.message(Form.feeder, lambda message:
-            re.search(f'{laying_types}', message.text) and re.search(r'[0-9]kw |[0-9]kw$|[0-9]a$|[0-9]a ', message.text.casefold()))
+            re.search(f'{laying_types}', message.text) and re.search(r'[0-9]kw |[0-9]kw$|[0-9]a$|[0-9]a ',
+                                                                     message.text.casefold()))
 async def process_feeder(message: Message, state: FSMContext) -> None:
     try:
         feeder = f'{(await state.get_data())["feeder"]} {convert_laying(message.text)}'
@@ -229,8 +232,11 @@ async def show_summary(message: Message) -> None:
         fdata.append(calc.format_values(computed_data))
     cad.cad_write(fdata)
     fdata.clear()
+    generate_pdf("output/template.dxf", "output/output.pdf")
     dxf_name = FSInputFile("output/template.dxf", filename=f"{project_data[-1]}.dxf")
     await message.answer_document(dxf_name)
+    pdf_name = FSInputFile("output/output.pdf", filename=f"{project_data[-1]}.pdf")
+    await message.answer_document(pdf_name)
 
 
 @dp.message(state=None)
