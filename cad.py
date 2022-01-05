@@ -6,7 +6,7 @@ from common import csv_read
 
 def get_insert_point(number):
     """Returns x, y coordinates."""
-    x = 32 + number * 46
+    x = 55 + number * 46
     y = 110
     return x, y
 
@@ -173,7 +173,7 @@ def gen_logo(msp):
                 gray_hatch.paths.add_polyline_path(row, is_closed=True, flags=ezdxf.const.BOUNDARY_PATH_OUTERMOST)
 
 
-def cad_write(formatted_data):
+def cad_write(formatted_data, project_info):
     # Create a new drawing in the DXF format of AutoCAD 2010
     doc = ezdxf.new('R2000', setup=True)
 
@@ -204,7 +204,7 @@ def cad_write(formatted_data):
 
     msp.add_lwpolyline(((0, 0), (0, 297), (420, 297), (420, 0)))
     blockref1 = msp.add_blockref('TITLE', (20, 7))
-    blockref1.add_auto_attribs({'PROJEKT': '930 Stala'})
+    blockref1.add_auto_attribs({'PROJEKT': project_info})
     for number, value in enumerate(formatted_data):
         # values is a dict with the attribute tag as item-key and
         # the attribute text content as item-value.
@@ -228,7 +228,9 @@ def cad_write(formatted_data):
             'Q': "Q" + str(number + 1),
         }
 
-        blockref = msp.add_blockref('NB_LS', point)
+        blockref = msp.add_blockref('NB_LS', point, dxfattribs={
+                                    'xscale': 0.75,
+                                    'yscale': 0.75})
         blockref.add_auto_attribs(values)
 
     # Save the drawing.
