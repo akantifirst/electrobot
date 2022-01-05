@@ -230,7 +230,7 @@ async def show_summary(message: Message) -> None:
     for feeder in project_data[:-1]:
         computed_data = calc.calc(feeder)
         fdata.append(calc.format_values(computed_data))
-    cad.cad_write(fdata)
+    cad.cad_write(fdata, project_data[-1])
     fdata.clear()
     generate_pdf("output/template.dxf", "output/output.pdf")
     dxf_name = FSInputFile("output/template.dxf", filename=f"{project_data[-1]}.dxf")
