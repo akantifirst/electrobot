@@ -140,8 +140,8 @@ async def process_param(message: Message, state: FSMContext):
 @dp.message(Form.feeder, F.text.casefold() == "fertig")
 async def process_project(message: Message, state: FSMContext) -> None:
     await state.set_state(Form.project)
-    await message.answer("Geben Sie bitte die Projektnummer\nund den Namen ein.\n"
-                         "Optional Geben Sie die Verteilername durch Komma getrennt ein.\n"
+    await message.answer("Geben Sie bitte die Projektnummer und den Namen ein.\n"
+                         "Optional geben Sie die UV-Name mit Komma getrennt ein.\n"
                          "<i>Beispiel: 1025 Philharmonie Gasteig, NSHV-BK1</i>",
                          reply_markup=ReplyKeyboardRemove())
 
@@ -209,7 +209,7 @@ async def process_result(message: Message, state: FSMContext):
                          f"{project_number} {project_name}",
                          reply_markup=ReplyKeyboardRemove())
     dxf_path, pdf_path = summary(project_data)
-    filename = f"{project_number} {project_name} {switchboard}"
+    filename = f"{project_number} {project_name}, {switchboard}"
     await message.answer_document(FSInputFile(dxf_path, filename=f"{filename}.dxf"))
     await message.answer_document(FSInputFile(pdf_path, filename=f"{filename}.pdf"))
 
