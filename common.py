@@ -1,6 +1,7 @@
+import csv
+from datetime import date, datetime
 from aiogram.types import KeyboardButton
 from aiogram.utils.keyboard import ReplyKeyboardBuilder
-import csv
 
 
 def csv_read(path: str) -> list:
@@ -26,3 +27,9 @@ def keyboard_laying():
         kb_laying.add(KeyboardButton(text=f'{e}'))
     kb_laying.adjust(1)
     return kb_laying
+
+
+def get_datetime():
+    now = datetime.now().strftime("%H:%M:%S")
+    today = date.today().strftime("%d.%m.%Y")
+    return now, today
