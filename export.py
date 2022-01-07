@@ -6,11 +6,11 @@ from ezdxf.addons.drawing import Properties, RenderContext, Frontend
 from ezdxf.addons.drawing.backend import prepare_string_for_rendering
 from ezdxf.addons.drawing.matplotlib import MatplotlibBackend
 from ezdxf.addons.drawing.properties import LayoutProperties
+from ezdxf.addons.drawing.config import Configuration
 from ezdxf.math import Matrix44
 
 # TODO:
 #   resolve font scaling problem
-#   resolve drawing borders problem
 
 
 class FixedSizedTextMatplotlibBackend(MatplotlibBackend):
@@ -49,26 +49,29 @@ class FixedSizedTextMatplotlibBackend(MatplotlibBackend):
 
 
 def generate_pdf(input_dxf, output_pdf):
+    config = Configuration.defaults()
+    try:
+        doc = ezdxf.readfile(input_dxf)
+        layout = doc.modelspace()
+        ezdxf.addons.drawing.properties.MODEL_SPACE_BG_COLOR = '#FFFFFF'
+        fig: plt.Figure = plt.figure(frameon=False)
+        ax: plt.Axes = fig.add_axes((0, 0, 1, 1))
+        ax.margins(0, 0)
+        ctx = RenderContext(layout.doc)
+        layout_properties = LayoutProperties.from_layout(layout)
 
-    doc = ezdxf.readfile(input_dxf)
-    layout = doc.modelspace()
-    ezdxf.addons.drawing.properties.MODEL_SPACE_BG_COLOR = '#FFFFFF'
-    fig: plt.Figure = plt.figure(frameon=False)
-    ax: plt.Axes = fig.add_axes((0, 0, 1, 1))
-    ax.margins(0, 0)
-    ctx = RenderContext(layout.doc)
-    layout_properties = LayoutProperties.from_layout(layout)
-
-    out = FixedSizedTextMatplotlibBackend(ax)
-    Frontend(ctx, out).draw_layout(
-        layout,
-        finalize=True,
-        layout_properties=layout_properties,
-    )
-    fig.savefig(
-        output_pdf, dpi=72, facecolor=ax.get_facecolor()
-    )
-    plt.close(fig)
-
-
-generate_pdf('output/template.dxf', 'output/output.pdf')
+        out = FixedSizedTextMatplotlibBackend(ax)
+        Frontend(ctx, out,
+                 config=config.with_changes(
+                     lineweight_scaling=1.5,
+                     min_lineweight=0.3)).draw_layout(
+                layout,
+                finalize=True,
+                layout_properties=layout_properties,
+                )
+        fig.savefig(
+            output_pdf, dpi=72, facecolor=ax.get_facecolor()
+        )
+        plt.close(fig)
+    except IOError:
+        print("File system related error")
