@@ -64,7 +64,7 @@ def generate_pdf(input_dxf, output_pdf):
         Frontend(ctx, out,
                  config=config.with_changes(
                      lineweight_scaling=1.5,
-                     min_lineweight=0.3)).draw_layout(
+                     min_lineweight=0.2)).draw_layout(
                 layout,
                 finalize=True,
                 layout_properties=layout_properties,
