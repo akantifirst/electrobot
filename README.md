@@ -3,7 +3,7 @@
 
 <img align="left" width="150" height="150" src="images/logo.png">
 
-A simple telegram bot that converts electrical power to current and vice versa.
+A telegram bot that generates electrical schemes on the go.
 <br>It parses user input automatically. Here are quick examples:
 <br>
 <br>```12kw  => 12kW 400V cos(φ)=0.95```
@@ -27,8 +27,6 @@ In the future, this bot will be able to generate electrical schemas based on use
 
 Following problems need to be solved:
 1. Database storage for user requests
-2. Generation of schemas from project database
-3. Conversion of schemas to PNG and then to PDF
 
 ## Limitations
 
