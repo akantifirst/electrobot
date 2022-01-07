@@ -13,7 +13,7 @@ style_title2 = {'height': 2.0, 'color': 7, 'style': 'arial'}
 style_title3 = {'height': 2.5, 'color': 7, 'style': 'arial'}
 style_title4 = {'height': 3.0, 'color': 7, 'style': 'arial'}
 style_boldline = {'lineweight': 40, 'color': 7}
-style_electro = {'lineweight': 50, 'color': 5}
+style_electro = {'lineweight': 40, 'color': 5}
 style_thin = {'lineweight': 0, 'color': 7}
 
 
@@ -95,22 +95,17 @@ def gen_title(doc):
     # Add DXF entities to the block 'TITLE'.
     # title.add_line((0, 0), (0, 30), dxfattribs=style_boldline)  # left vertical
     title.add_line((0, 30), (393, 30), dxfattribs=style_boldline)  # upper horizontal
-    title.add_line((150, 30), (150, 6), dxfattribs=style_boldline)  # center left vertical
-    title.add_line((150, 6), (243, 6), dxfattribs=style_boldline)  # center horizontal
-    title.add_line((243, 6), (243, 30), dxfattribs=style_boldline)  # center right vertical
-
+    title.add_line((150, 30), (150, 0), dxfattribs=style_boldline)  # center left vertical
+    title.add_line((243, 0), (243, 30), dxfattribs=style_boldline)  # center right vertical
     title.add_line((0, 24), (150, 24), dxfattribs=style_thin)
     title.add_line((0, 18), (150, 18), dxfattribs=style_thin)
     title.add_line((0, 12), (150, 12), dxfattribs=style_thin)
-    title.add_line((0, 6), (150, 6), dxfattribs=style_thin)
+    title.add_line((0, 6), (393, 6), dxfattribs=style_thin)
     title.add_line((12, 0), (12, 30), dxfattribs=style_thin)
     title.add_line((30, 0), (30, 30), dxfattribs=style_thin)
     title.add_line((42, 0), (42, 30), dxfattribs=style_thin)
-    title.add_line((150, 0), (150, 6), dxfattribs=style_thin)
-    title.add_line((243, 0), (243, 6), dxfattribs=style_thin)
     title.add_line((243, 24), (393, 24), dxfattribs=style_thin)
     title.add_line((243, 12), (393, 12), dxfattribs=style_thin)
-    title.add_line((243, 6), (393, 6), dxfattribs=style_thin)
     title.add_line((263.5, 24), (263.5, 30), dxfattribs=style_thin)
     title.add_line((354, 24), (354, 30), dxfattribs=style_thin)
     title.add_line((374, 24), (374, 30), dxfattribs=style_thin)
@@ -148,10 +143,10 @@ def gen_title(doc):
     title.add_text('-', dxfattribs=style_title4).set_pos((329.25, 1.5), align='CENTER')
     title.add_text('Planinhalt', dxfattribs=style_title2).set_pos((244.5, 20.0), align='LEFT')
     title.add_text('Projekt', dxfattribs=style_title2).set_pos((244.5, 26.0), align='LEFT')
-    title.add_attdef('DRUECKDATUM', dxfattribs=style_title2).set_pos((196.5, 2.3), align='CENTER')
+    title.add_text('CAD-Datei', dxfattribs=style_title2).set_pos((244.5, 8.0), align='LEFT')
+    title.add_text('Export Datei', dxfattribs=style_title2).set_pos((244.5, 2.0), align='LEFT')
 
-    title.add_text('Plancodierung', dxfattribs=style_title2).set_pos((244.5, 8.0), align='LEFT')
-    title.add_text('Dateiname', dxfattribs=style_title2).set_pos((244.5, 2.0), align='LEFT')
+    title.add_attdef('DRUECKDATUM', dxfattribs=style_title1).set_pos((196.5, 2.3), align='CENTER')
     title.add_attdef('BLATTGROESSE', dxfattribs=style_title3).set_pos((383.5, 25.75), align='CENTER')
     title.add_attdef('INDEX', dxfattribs=style_title4).set_pos((317.0, 1.5), align='CENTER')
     title.add_attdef('DATUM', dxfattribs=style_title2).set_pos((343.0, 2.0), align='CENTER')
@@ -160,8 +155,8 @@ def gen_title(doc):
     title.add_attdef('BLATT_VON', dxfattribs=style_title2).set_pos((385.5, 2.0), align='CENTER')
     title.add_attdef('PROJEKT', dxfattribs=style_title3).set_pos((308.75, 25.75), align='CENTER')
     title.add_attdef('PLANINHALT', dxfattribs=style_title3).set_pos((318.0, 18.0), align='CENTER')
-    title.add_attdef('PLANCODIERUNG', dxfattribs=style_title2).set_pos((287.25, 8.0), align='CENTER')
-    title.add_attdef('DATEINAME', dxfattribs=style_title2).set_pos((287.25, 2.3), align='CENTER')
+    title.add_attdef('CAD_DATEI', dxfattribs=style_title2).set_pos((287.25, 8.0), align='CENTER')
+    title.add_attdef('PDF_DATEI', dxfattribs=style_title2).set_pos((287.25, 2.3), align='CENTER')
     title.add_attdef('I1_AENDERUNG', dxfattribs=style_title2).set_pos((45.0, 20.0), align='LEFT')
     title.add_attdef('I1_DATUM', dxfattribs=style_title2).set_pos((21.0, 20.0), align='CENTER')
     title.add_attdef('I1_NAME', dxfattribs=style_title2).set_pos((36.0, 20.0), align='CENTER')
@@ -228,14 +223,18 @@ def cad_write(formatted_data, project_info):
     # Parse project information
     project_number = project_info['project_number']
     project_name = project_info['project_name']
+    if len(project_info['project_name']) > 16:
+        project_name_short = project_info['project_name'][:13] + "..."
+    else:
+        project_name_short = project_info['project_name']
     switchboard = project_info['switchboard']
 
     # Fill in title attributes
     title_ref.add_auto_attribs({'PROJEKT': f"{project_number} {project_name}",
                                 'PLANINHALT': f"Schema Elektroverteilung {switchboard}",
                                 'BLATTGROESSE': "A3+",
-                                'PLANCODIERUNG': f"{project_number} {project_name} {switchboard}.dxf",
-                                'DATEINAME': f"{project_number} {project_name} {switchboard}.pdf",
+                                'CAD_DATEI': f"{project_number} {project_name_short} {switchboard}.dxf",
+                                'PDF_DATEI': f"{project_number} {project_name_short} {switchboard}.pdf",
                                 'INDEX': "0",
                                 'DATUM': f"{get_datetime()[1]}",
                                 'GEZEICHNET': "NB",
