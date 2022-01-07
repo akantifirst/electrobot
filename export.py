@@ -1,5 +1,5 @@
 import math
-import matplotlib.pyplot as plt
+from matplotlib import pyplot as plt
 from matplotlib.font_manager import FontProperties
 import ezdxf
 from ezdxf.addons.drawing import Properties, RenderContext, Frontend
