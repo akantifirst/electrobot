@@ -140,8 +140,9 @@ async def process_param(message: Message, state: FSMContext):
 @dp.message(Form.feeder, F.text.casefold() == "fertig")
 async def process_project(message: Message, state: FSMContext) -> None:
     await state.set_state(Form.project)
-    await message.answer("Geben Sie bitte die Projektnummer\nund den Namen ein:\n"
-                         "<i>Beispiel: 1025 Philharmonie Gasteig</i>",
+    await message.answer("Geben Sie bitte die Projektnummer\nund den Namen ein.\n"
+                         "Optional Geben Sie die Verteilername durch Komma getrennt ein.\n"
+                         "<i>Beispiel: 1025 Philharmonie Gasteig, NSHV-BK1</i>",
                          reply_markup=ReplyKeyboardRemove())
 
 
