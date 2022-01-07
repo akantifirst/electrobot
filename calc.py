@@ -1,7 +1,10 @@
-from common import csv_read
-from math import sqrt, sin, acos
-from config import *
 import re
+from math import sqrt, sin, acos
+from export import generate_pdf
+from cad import cad_write
+from common import csv_read
+from config import *
+
 
 # BUG: du has no effect with bigger power e.g. 500kw 300m
 
@@ -34,8 +37,7 @@ def parse_input(user_input):
 
     # Refine user input
     user_input = re.sub(' +', ' ', user_input).replace(',', '.').lower().split(' ')
-    print(user_input)
-    # get name
+    # get name of feeder
     if sum(c.isalpha() for c in user_input[0]) > 2 or sum(c.isdigit() for c in user_input[0]) == 0:
         name = user_input[0]
         user_input = user_input[1:]
@@ -51,7 +53,6 @@ def parse_input(user_input):
                 voltage = clear_chars(word)  # get voltage
             elif word[len(word) - 1] == 'm':
                 length = clear_chars(word)  # get length
-                print(length)
             elif any([_ in word for _ in ['a1', 'a2', 'b1', 'b2', 'c1', 'd1', 'e1', 'f1', 'f2', 'f3', 'g1', 'g2']]):
                 laying = str(word)  # get laying
             elif any([_ in word for _ in ['alu', 'cu']]):
@@ -204,3 +205,48 @@ def format_values(computed_data):
     formatted_data = [name, power, g, phi, voltage, cable, section,
                       length, du, laying, cb, cb_type, release, ib]
     return formatted_data
+
+
+def summary(data):
+    fdata, power_inp, project_info = [], 0, data[-1]
+    pdf_path, dxf_path = PDF_LOCATION, DXF_LOCATION
+
+    # Perform calculations and formatting sequentially to each feeder
+    for feeder in data[:-1]:
+        computed_data = calc(feeder)
+        fdata.append(format_values(computed_data))
+        power_inp += round(float(computed_data[1] * computed_data[9]), 2)
+
+    # Calculate cumulative power for the power input
+    if len(data[:-1]) < 3:
+        power_inp = calc(data[0])[1] * 1.6
+    power_inp = f"{power_inp}kW e1"
+    fdata.append(format_values(calc(parse_input(power_inp))))
+
+    # Functions for generating .dxf and .pdf files
+    cad_write(fdata, project_info)
+    generate_pdf(dxf_path, pdf_path)
+
+    # Clear data structures for the current user request
+    data.clear()
+    fdata.clear()
+    return dxf_path, pdf_path
+
+
+def parse_project(data: str):
+    project_number = "10xx"
+    project_name = "Projekt Name"
+    switchboard = "NSHV/GHV"
+    if "," in data:
+        switchboard = data.split(", ")[1]
+        project_info = data.split(", ")[0]
+    else:
+        project_info = data
+    if " " in project_info:
+        if sum(_.isalpha() for _ in project_info[0]) == 0:
+            project_number = project_info.split(" ")[0]
+        project_name = " ".join(project_info.split(" ")[1:])
+    else:
+        if sum(_.isalpha() for _ in project_info) == 0:
+            project_number = project_info
+    return project_number, project_name, switchboard
