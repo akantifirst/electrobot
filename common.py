@@ -30,6 +30,6 @@ def keyboard_laying():
 
 
 def get_datetime():
-    now = datetime.now().strftime("%H:%M:%S")
-    today = date.today().strftime("%d.%m.%Y")
+    now = datetime.now().strftime("%H:%M")
+    today = date.today().strftime("%d.%m.%y")
     return now, today
