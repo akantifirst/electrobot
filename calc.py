@@ -58,7 +58,7 @@ def parse_input(user_input):
             elif any([_ in word for _ in ['alu', 'cu']]):
                 medium = str(word)  # get medium
             elif word[len(word) - 1] == 'g':
-                g = str(word)[:-1]  # get g (german: gleichzeitigkeitsfaktor)
+                g = float(word[:-1])  # get g (german: gleichzeitigkeitsfaktor)
             elif any([_ in word for _ in ['abb', 'siemens', 'hager']]):
                 maker = str(word)  # get maker
             elif word[len(word) - 1] == '%':
@@ -215,7 +215,8 @@ def summary(data):
     for feeder in data[:-1]:
         computed_data = calc(feeder)
         fdata.append(format_values(computed_data))
-        power_inp += round(float(computed_data[1] * computed_data[9]), 2)
+        power_inp += round(computed_data[1] * computed_data[9], 2)
+
 
     # Calculate cumulative power for the power input
     if len(data[:-1]) < 3:
