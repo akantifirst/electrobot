@@ -7,9 +7,7 @@ from aiogram.dispatcher.fsm.state import State, StatesGroup
 from aiogram.types import KeyboardButton, Message, ReplyKeyboardMarkup, ReplyKeyboardRemove, FSInputFile
 from config import TOKEN, LAYING_TYPES, LAYING
 from common import convert_laying, keyboard_laying
-from export import generate_pdf
-import cad
-import calc
+from calc import parse_input, calc, format_values, parse_project, summary
 
 dp = Dispatcher()
 project_data = []
@@ -169,7 +167,7 @@ async def process_feeder(message: Message, state: FSMContext) -> None:
     except KeyError:
         feeder = message.text
     if feeder not in ["hv", "/hv"]:
-        pre = calc.parse_input(feeder)
+        pre = parse_input(feeder)
         name = f"{str(pre[0].upper())}"
         load = f"P={str(pre[1]).replace(',', '.')}kW" if pre[1] != " " else f"I={str(pre[2]).replace(',', '.')}A"
         await message.answer(f'Abgang  <i>{name} {load}</i> \nerfolgreich zu Liste hinzugefügt')
@@ -196,18 +194,23 @@ async def process_feeder(message: Message, state: FSMContext) -> None:
 @dp.message(Form.project)
 async def process_result(message: Message, state: FSMContext):
     await state.clear()
-    await state.set_data({'project': message.text})
+    project_number, project_name, switchboard = parse_project(message.text)
+    await state.set_data({'project_number': project_number,
+                          'project_name': project_name,
+                          'switchboard': switchboard})
     data = await state.get_data()
     try:
-        await update_feeder(data["project"], set_exactly=False)
+        await update_feeder(data, set_exactly=False)
     except TypeError:
         pass
     await message.answer(f"Fertig! Unten ist das NSHV-Schema und\n"
                          f"die NSHV-Berechnung für das Projekt\n"
-                         f"{message.text}",
+                         f"{project_number} {project_name}",
                          reply_markup=ReplyKeyboardRemove())
-    await show_summary(message=message)
-    project_data.clear()
+    dxf_path, pdf_path = summary(project_data)
+    filename = f"{project_number} {project_name} {switchboard}"
+    await message.answer_document(FSInputFile(dxf_path, filename=f"{filename}.dxf"))
+    await message.answer_document(FSInputFile(pdf_path, filename=f"{filename}.pdf"))
 
 
 @dp.message(Form.laying)
@@ -218,33 +221,19 @@ async def process_error(message: Message) -> None:
                          'Probieren Sie es noch mal:', reply_markup=ReplyKeyboardRemove())
 
 
-async def update_feeder(data: [str, Any], set_exactly: bool) -> None:
+async def update_feeder(data: [list, Any], set_exactly: bool) -> None:
     if set_exactly:
         project_data[0] = data
     else:
         project_data.append(data)
 
 
-async def show_summary(message: Message) -> None:
-    fdata = []
-    for feeder in project_data[:-1]:
-        computed_data = calc.calc(feeder)
-        fdata.append(calc.format_values(computed_data))
-    cad.cad_write(fdata, project_data[-1])
-    fdata.clear()
-    generate_pdf("output/template.dxf", "output/output.pdf")
-    dxf_name = FSInputFile("output/template.dxf", filename=f"{project_data[-1]}.dxf")
-    await message.answer_document(dxf_name)
-    pdf_name = FSInputFile("output/output.pdf", filename=f"{project_data[-1]}.pdf")
-    await message.answer_document(pdf_name)
-
-
 @dp.message(state=None)
 async def process_message(message: Message):
     try:
-        parsed_data = calc.parse_input(message.text)
-        computed_data = calc.calc(parsed_data)
-        fdata = calc.format_values(computed_data)
+        parsed_data = parse_input(message.text)
+        computed_data = calc(parsed_data)
+        fdata = format_values(computed_data)
         name, power, g, phi, voltage, cable, section, length, du, laying_simple, cb, cb_type, release, ib = fdata
         await message.answer(f'<code>Verteiler:     {name}\n'
                              f'Leistung:      {power}\n'
