@@ -5,8 +5,8 @@
 
 This telegram bot is able to generate electrical schemes based on user input and provide them on the fly as convenient CAD/PDF files. It parses user input automatically. Here are quick examples:
 <br>
-<br>```12kw 1% => 12kW 400V cos(φ)=0.95, limit dU factor to 1%```
-<br>```UV-AV-01 12a NYCWY 0,8 => 12A, specify cable type, cos(φ)=0.80, switchboard name: UV-AV-01```
+<br>```12kw 1% NYCWY => 12kW 400V cos(φ)=0.95, limit dU factor to 1%, specify cable type```
+<br>```UV-AV-01 12a 0,8 => 12A, cos(φ)=0.80, switchboard name: UV-AV-01```
 <br>```12kw e1 30m => 12kW, laying in cable channel (see laying types), length 30m```
 <br>
 <br>
