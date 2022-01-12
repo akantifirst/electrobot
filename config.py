@@ -1,4 +1,4 @@
-TOKEN = "1779223371:AAFDFO38aEeVMCZzT4tSe1VczuFk4y-OCB4"
+TOKEN = "your-telegram-token"
 
 NAME = "uv-av-xx"
 POWER = " "
