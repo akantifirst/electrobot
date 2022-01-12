@@ -116,7 +116,7 @@ def keyboard_laying() -> ReplyKeyboardBuilder:
     return kb_laying
 
 
-def get_datetime() -> tuple[str, str]:
+def get_datetime():
     """
         Self-explained function
     """
