@@ -13,7 +13,7 @@ from ezdxf.math import Matrix44
 #   resolve font scaling problem
 
 
-class FixedSizedTextMatplotlibBackend(MatplotlibBackend):
+class CustomBackend(MatplotlibBackend):
     def __init__(
             self,
             ax: plt.Axes,
@@ -60,7 +60,7 @@ def generate_pdf(input_dxf, output_pdf):
         ctx = RenderContext(layout.doc)
         layout_properties = LayoutProperties.from_layout(layout)
 
-        out = FixedSizedTextMatplotlibBackend(ax)
+        out = CustomBackend(ax)
         Frontend(ctx, out,
                  config=config.with_changes(
                      lineweight_scaling=1.5,
