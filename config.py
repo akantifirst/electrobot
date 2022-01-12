@@ -1,4 +1,4 @@
-TOKEN = "your_telegram_bot_token"
+TOKEN = "1779223371:AAFDFO38aEeVMCZzT4tSe1VczuFk4y-OCB4"
 
 NAME = "uv-av-xx"
 POWER = " "
@@ -17,3 +17,5 @@ X = 0.08
 RO_CU = 0.0225
 RO_AL = 0.036
 LAYING_TYPES = ['a1', 'a2', 'b1', 'b2', 'c1', 'd1', 'e1', 'f1', 'f2', 'f3', 'g1', 'g2']
+PDF_LOCATION = "output/export.pdf"
+DXF_LOCATION = "output/template.dxf"
