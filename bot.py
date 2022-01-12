@@ -19,9 +19,8 @@ laying = LAYING
 #  move from csv files to redis database
 #  add "options" section
 #  add "verlegearten"
-#  add/update frame CAD drawing function
 #  add possibility expand frame based on number of feeders
-#  add possibility to export pdf (solve scaling problem with Matplotlib backend)
+#  solve text scaling problem with Matplotlib backend
 #  add generation of a report in Excel with xlwings
 #  add generation of a report in pdf
 
@@ -253,7 +252,7 @@ async def process_message(message: Message):
                              parse_mode='HTML')
 
     except (TypeError, ValueError):
-        await message.reply('Please, review your request [bot]')
+        await message.reply('Ein Fehler ist aufgetreten. Überprüfen Sie bitte die Richtigkeit Ihrer Angaben.')
 
 
 if __name__ == "__main__":
