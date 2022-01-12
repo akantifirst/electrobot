@@ -66,6 +66,9 @@ def parse_input(user_input):
             elif not re.search('[a-zA-Z]', word) and 0.6 <= float(word) <= 1.0:
                 phi = float(word)
 
+        # Correct user input. F1 laying type is onle for 1-pole feeders
+        if voltage >= 300 and laying == 'f1':
+            laying = 'f2'
         parsed_data = [name, power, current, voltage, phi, laying, cable, length, medium, g, maker, du_max]
         return parsed_data
     except ValueError:
@@ -216,7 +219,6 @@ def summary(data):
         computed_data = calc(feeder)
         fdata.append(format_values(computed_data))
         power_inp += round(computed_data[1] * computed_data[9], 2)
-
 
     # Calculate cumulative power for the power input
     if len(data[:-1]) < 3:
