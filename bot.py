@@ -1,18 +1,47 @@
+# Common python libraries
 import re
 import asyncio
 from typing import Any
-from aiogram import Bot, Dispatcher, F
-from aiogram.dispatcher.fsm.context import FSMContext
-from aiogram.dispatcher.fsm.state import State, StatesGroup
-from aiogram.types import KeyboardButton, Message, ReplyKeyboardMarkup, ReplyKeyboardRemove, FSInputFile
-from config import TOKEN, LAYING_TYPES, LAYING
-from common import convert_laying, keyboard_laying
-from calc import parse_input, calc, format_values, parse_project, summary
 
-dp = Dispatcher()
+# Frameworks
+from aiogram import (
+    Bot,
+    Dispatcher,
+    F)
+from aiogram.dispatcher.fsm.context import FSMContext
+from aiogram.dispatcher.fsm.state import (
+    State,
+    StatesGroup)
+from aiogram.types import (
+    KeyboardButton,
+    Message,
+    ReplyKeyboardMarkup,
+    ReplyKeyboardRemove,
+    FSInputFile)
+
+# Project files
+from config import (
+    TOKEN,
+    LAYING_TYPES,
+    LAYING)
+from common import (
+    keyboard_laying,
+    laying_provided,
+    load_provided,
+    get_name)
+from calc import (
+    parse_input,
+    calc,
+    format_values,
+    parse_project,
+    summary)
+
+
+dispatcher = Dispatcher()
 project_data = []
-laying_types = ' ' + '| '.join(LAYING_TYPES)
+laying_types = LAYING_TYPES
 laying = LAYING
+
 
 # TODO:
 #  check if it is possible to calculate without tables
@@ -24,14 +53,14 @@ laying = LAYING
 #  add generation of a report in Excel with xlwings
 #  add generation of a report in pdf
 
-
+# States for Finite State Machine
 class Form(StatesGroup):
     feeder = State()
     laying = State()
     project = State()
 
 
-@dp.message(F.text.casefold().in_({'/abbr', 'abbr', 'abbruch'}))
+@dispatcher.message(F.text.casefold().in_({'/abbr', 'abbr', 'abbruch'}))
 async def process_cancel(message: Message, state: FSMContext) -> None:
     if await state.get_state() is not None:
         await state.clear()
@@ -39,11 +68,10 @@ async def process_cancel(message: Message, state: FSMContext) -> None:
         project_data.clear()
 
 
-@dp.message(F.text.casefold().in_({'/start', '/hilfe', 'start', 'hilfe'}))
+@dispatcher.message(F.text.casefold().in_({'/start', '/hilfe', 'start', 'hilfe'}))
 async def process_help(message: Message, state: FSMContext):
     await state.clear()
-    await message.answer('<b>Willkomen zu Electrobot</b>.\n'
-                         '\n'
+    await message.answer('<b>Willkomen zu Electrobot</b>.\n\n'
                          'Dieses Program ist geeignet um schnell den Kabelquerschnitt, den Spannungsfall, '
                          'oder den LS-Schalter sowie andere Parameter für ein oder auch für mehrere '
                          'Stromkreise zu ermitteln. Das Programm hat 2 Modi:\n',
@@ -80,7 +108,7 @@ async def process_help(message: Message, state: FSMContext):
                          parse_mode='HTML')
 
 
-@dp.message(F.text.casefold().in_({'/param', 'param'}))
+@dispatcher.message(F.text.casefold().in_({'/param', 'param'}))
 async def process_param(message: Message, state: FSMContext):
     await state.clear()
     await message.answer('<b>Stromkreis Parameter</b>\n\n'
@@ -128,7 +156,7 @@ async def process_param(message: Message, state: FSMContext):
                          parse_mode='HTML')
 
 
-@dp.message(F.text.casefold().in_({'/opt', 'opt'}))
+@dispatcher.message(F.text.casefold().in_({'/opt', 'opt'}))
 async def process_param(message: Message, state: FSMContext):
     await state.clear()
     await message.answer('Diese Sektion ist derzeit in Bearbeitung ',
@@ -136,7 +164,7 @@ async def process_param(message: Message, state: FSMContext):
                          parse_mode='HTML')
 
 
-@dp.message(Form.feeder, F.text.casefold() == "fertig")
+@dispatcher.message(Form.feeder, F.text.casefold() == "fertig")
 async def process_project(message: Message, state: FSMContext) -> None:
     await state.set_state(Form.project)
     await message.answer("Geben Sie bitte die Projektnummer und den Namen ein.\n"
@@ -145,38 +173,33 @@ async def process_project(message: Message, state: FSMContext) -> None:
                          reply_markup=ReplyKeyboardRemove())
 
 
-@dp.message(Form.feeder, lambda message:
-            not re.search(f'{laying_types}', message.text) and re.search(r'[0-9]kw |[0-9]kw$|[0-9]a$|[0-9]a ',
-                                                                         message.text.casefold()))
+@dispatcher.message(Form.feeder, lambda message: not laying_provided(message.text) and load_provided(message.text))
 async def process_laying(message: Message, state: FSMContext) -> None:
     await state.update_data(feeder=message.text)
     await state.set_state(Form.laying)
-
     await message.answer("Wählen Sie bitte den Verlegeart des Kabels.\nVerwenden Sie bitte die Schaltflächen unten:",
                          reply_markup=ReplyKeyboardMarkup(keyboard=keyboard_laying().export(), resize_keyboard=True)),
 
 
-@dp.message(F.text.casefold().in_({'/hv', 'hv'}))
-@dp.message(Form.laying, lambda message: re.match(f'{laying_types}', convert_laying(message.text)))
-@dp.message(Form.feeder, lambda message:
-            re.search(f'{laying_types}', message.text) and re.search(r'[0-9]kw |[0-9]kw$|[0-9]a$|[0-9]a ',
-                                                                     message.text.casefold()))
+@dispatcher.message(F.text.casefold().in_({'/hv', 'hv'}))
+@dispatcher.message(Form.laying, lambda message: laying_provided(message.text, find_ref=True))
+@dispatcher.message(Form.feeder, lambda message: laying_provided(message.text) and load_provided(message.text))
 async def process_feeder(message: Message, state: FSMContext) -> None:
     try:
-        feeder = f'{(await state.get_data())["feeder"]} {convert_laying(message.text)}'
+        user_input = (await state.get_data())["feeder"]
+        laying_from_keyboard = laying_provided(message.text, just_match=False)
+        feeder = f'{user_input}{laying_from_keyboard}'
     except KeyError:
         feeder = message.text
     if feeder not in ["hv", "/hv"]:
-        pre = parse_input(feeder)
-        name = f"{str(pre[0].upper())}"
-        load = f"P={str(pre[1]).replace(',', '.')}kW" if pre[1] != " " else f"I={str(pre[2]).replace(',', '.')}A"
-        await message.answer(f'Abgang  <i>{name} {load}</i> \nerfolgreich zu Liste hinzugefügt')
-        await update_feeder(data=pre, set_exactly=False)
+        preliminary_data = parse_input(feeder)
+        preliminary_name = get_name(preliminary_data)
+        await message.answer(f'Abgang  <i>{preliminary_name}</i> \nerfolgreich zu Liste hinzugefügt')
+        await update_feeder(data=preliminary_data, set_exactly=False)
     await state.clear()
     await state.set_state(Form.feeder)
     await message.answer(
         "Geben Sie die Daten des Stromkreises ein.\n"
-        "Für mehr Informationen siehe /hilfe.\n"
         "<i>Beispiel: UV-AV-EG 23kw 56m</i>",
         reply_markup=ReplyKeyboardMarkup(
             keyboard=[
@@ -191,7 +214,7 @@ async def process_feeder(message: Message, state: FSMContext) -> None:
     )
 
 
-@dp.message(Form.project)
+@dispatcher.message(Form.project)
 async def process_result(message: Message, state: FSMContext):
     await state.clear()
     project_number, project_name, switchboard = parse_project(message.text)
@@ -213,9 +236,9 @@ async def process_result(message: Message, state: FSMContext):
     await message.answer_document(FSInputFile(pdf_path, filename=f"{filename}.pdf"))
 
 
-@dp.message(Form.laying)
-@dp.message(Form.feeder)
-@dp.message(lambda message: not re.search(r'kw|a', message.text.casefold()))
+@dispatcher.message(Form.laying)
+@dispatcher.message(Form.feeder)
+@dispatcher.message(lambda message: not re.search(r'kw|a', message.text.casefold()))
 async def process_error(message: Message) -> None:
     await message.answer('Überprüfen Sie bitte die Richtigkeit Ihrer Angaben. '
                          'Probieren Sie es noch mal:', reply_markup=ReplyKeyboardRemove())
@@ -228,7 +251,7 @@ async def update_feeder(data: [list, Any], set_exactly: bool) -> None:
         project_data.append(data)
 
 
-@dp.message(state=None)
+@dispatcher.message(state=None)
 async def process_message(message: Message):
     try:
         parsed_data = parse_input(message.text)
@@ -256,4 +279,4 @@ async def process_message(message: Message):
 
 
 if __name__ == "__main__":
-    asyncio.run(dp.start_polling(Bot(token=TOKEN, parse_mode="HTML")))
+    asyncio.run(dispatcher.start_polling(Bot(token=TOKEN, parse_mode="HTML")))
