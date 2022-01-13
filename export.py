@@ -1,5 +1,5 @@
 import math
-from matplotlib import pyplot as plt
+from matplotlib import pyplot as plot
 from matplotlib.font_manager import FontProperties
 import ezdxf
 from ezdxf.addons.drawing import Properties, RenderContext, Frontend
@@ -16,7 +16,7 @@ from ezdxf.math import Matrix44
 class CustomBackend(MatplotlibBackend):
     def __init__(
             self,
-            ax: plt.Axes,
+            ax: plot.Axes,
             text_size_scale: float = 1,
             *,
             adjust_figure: bool = True,
@@ -54,8 +54,8 @@ def generate_pdf(input_dxf, output_pdf):
         doc = ezdxf.readfile(input_dxf)
         layout = doc.modelspace()
         ezdxf.addons.drawing.properties.MODEL_SPACE_BG_COLOR = '#FFFFFF'
-        fig: plt.Figure = plt.figure(frameon=False)
-        ax: plt.Axes = fig.add_axes((0, 0, 1, 1))
+        fig: plot.Figure = plot.figure(frameon=False)
+        ax: plot.Axes = fig.add_axes((0, 0, 1, 1))
         ax.margins(0, 0)
         ctx = RenderContext(layout.doc)
         layout_properties = LayoutProperties.from_layout(layout)
@@ -72,6 +72,6 @@ def generate_pdf(input_dxf, output_pdf):
         fig.savefig(
             output_pdf, dpi=72, facecolor=ax.get_facecolor()
         )
-        plt.close(fig)
+        plot.close(fig)
     except IOError:
         print("File system related error")
