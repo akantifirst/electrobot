@@ -1,5 +1,4 @@
 # Common python libraries
-import re
 import asyncio
 from typing import Any
 
@@ -238,7 +237,7 @@ async def process_result(message: Message, state: FSMContext):
 
 @dispatcher.message(Form.laying)
 @dispatcher.message(Form.feeder)
-@dispatcher.message(lambda message: not re.search(r'kw|a', message.text.casefold()))
+@dispatcher.message(lambda message: not load_provided(message.text))
 async def process_error(message: Message) -> None:
     await message.answer('Überprüfen Sie bitte die Richtigkeit Ihrer Angaben. '
                          'Probieren Sie es noch mal:', reply_markup=ReplyKeyboardRemove())
