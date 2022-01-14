@@ -1,6 +1,5 @@
 # Common python libraries
 import asyncio
-from typing import Any
 
 # Frameworks
 from aiogram import (
@@ -37,7 +36,6 @@ from calc import (
 
 
 dispatcher = Dispatcher()
-project_data = []
 laying_types = LAYING_TYPES
 laying = LAYING
 
@@ -64,7 +62,6 @@ async def process_cancel(message: Message, state: FSMContext) -> None:
     if await state.get_state() is not None:
         await state.clear()
         await message.answer("Vorgang ist vom Benutzer abgebrochen", reply_markup=ReplyKeyboardRemove())
-        project_data.clear()
 
 
 @dispatcher.message(F.text.casefold().in_({'/start', '/hilfe', 'start', 'hilfe'}))
@@ -174,7 +171,7 @@ async def process_project(message: Message, state: FSMContext) -> None:
 
 @dispatcher.message(Form.feeder, lambda message: not laying_provided(message.text) and load_provided(message.text))
 async def process_laying(message: Message, state: FSMContext) -> None:
-    await state.update_data(feeder=message.text)
+    await state.update_data({'temp_load': message.text})
     await state.set_state(Form.laying)
     await message.answer("Wählen Sie bitte den Verlegeart des Kabels.\nVerwenden Sie bitte die Schaltflächen unten:",
                          reply_markup=ReplyKeyboardMarkup(keyboard=keyboard_laying().export(), resize_keyboard=True)),
@@ -184,18 +181,23 @@ async def process_laying(message: Message, state: FSMContext) -> None:
 @dispatcher.message(Form.laying, lambda message: laying_provided(message.text, find_ref=True))
 @dispatcher.message(Form.feeder, lambda message: laying_provided(message.text) and load_provided(message.text))
 async def process_feeder(message: Message, state: FSMContext) -> None:
-    try:
-        user_input = (await state.get_data())["feeder"]
-        laying_from_keyboard = laying_provided(message.text, just_match=False)
-        feeder = f'{user_input}{laying_from_keyboard}'
-    except KeyError:
-        feeder = message.text
-    if feeder not in ["hv", "/hv"]:
-        preliminary_data = parse_input(feeder)
+    current_state = await state.get_state()
+    if current_state is not None:
+        current_data = await state.get_data()
+        if current_state != 'Form:laying':
+            feeder = {f'feeder{len(current_data) + 1}': message.text}
+        else:
+            temp_load = current_data.pop('temp_load', None)
+            temp_laying = laying_provided(message.text, find_ref=True, just_match=False)
+            feeder = {f'feeder{len(current_data) + 1}': f'{temp_load}{temp_laying}'}
+        await state.set_data(current_data)
+        await state.update_data(feeder)
+
+        current_feeder = next(iter(feeder.values()))
+        preliminary_data = parse_input(current_feeder)
         preliminary_name = get_name(preliminary_data)
         await message.answer(f'Abgang  <i>{preliminary_name}</i> \nerfolgreich zu Liste hinzugefügt')
-        await update_feeder(data=preliminary_data, set_exactly=False)
-    await state.clear()
+
     await state.set_state(Form.feeder)
     await message.answer(
         "Geben Sie die Daten des Stromkreises ein.\n"
@@ -215,24 +217,21 @@ async def process_feeder(message: Message, state: FSMContext) -> None:
 
 @dispatcher.message(Form.project)
 async def process_result(message: Message, state: FSMContext):
-    await state.clear()
+
     project_number, project_name, switchboard = parse_project(message.text)
-    await state.set_data({'project_number': project_number,
-                          'project_name': project_name,
-                          'switchboard': switchboard})
-    data = await state.get_data()
-    try:
-        await update_feeder(data, set_exactly=False)
-    except TypeError:
-        pass
+    await state.update_data({'project_number': project_number,
+                             'project_name': project_name,
+                             'switchboard': switchboard})
+    raw_data = await state.get_data()
     await message.answer(f"Fertig! Unten ist das NSHV-Schema und\n"
                          f"die NSHV-Berechnung für das Projekt\n"
                          f"{project_number} {project_name}",
                          reply_markup=ReplyKeyboardRemove())
-    dxf_path, pdf_path = summary(project_data)
+    dxf_path, pdf_path = summary(raw_data)
     filename = f"{project_number} {project_name}, {switchboard}"
     await message.answer_document(FSInputFile(dxf_path, filename=f"{filename}.dxf"))
     await message.answer_document(FSInputFile(pdf_path, filename=f"{filename}.pdf"))
+    await state.clear()
 
 
 @dispatcher.message(Form.laying)
@@ -243,34 +242,27 @@ async def process_error(message: Message) -> None:
                          'Probieren Sie es noch mal:', reply_markup=ReplyKeyboardRemove())
 
 
-async def update_feeder(data: [list, Any], set_exactly: bool) -> None:
-    if set_exactly:
-        project_data[0] = data
-    else:
-        project_data.append(data)
-
-
 @dispatcher.message(state=None)
 async def process_message(message: Message):
     try:
         parsed_data = parse_input(message.text)
         computed_data = calc(parsed_data)
         fdata = format_values(computed_data)
-        name, power, g, phi, voltage, cable, section, length, du, laying_simple, cb, cb_type, release, ib = fdata
-        await message.answer(f'<code>Verteiler:     {name}\n'
-                             f'Leistung:      {power}\n'
-                             f'Gleichz.-keit: {g}\n'
-                             f'cos(f):        {phi}\n'
-                             f'Spannung:      {voltage}\n'
-                             f'Kabel:         {cable}\n'
-                             f'Querschnitt:   {section}\n'
-                             f'Kabellänge:    {length}\n'
-                             f'Spannungsfall: {du}\n'
-                             f'Verlegeart:    {laying_simple}\n'
-                             f'Schutzorgan:   {cb}\n'
-                             f'S.-organ Typ:  {cb_type}\n'
-                             f'Auslöser:      {release}\n'
-                             f'Ausl.-strom:   {ib}</code>',
+
+        await message.answer(f'<code>Verteiler:     {fdata["name"]}\n'
+                             f'Leistung:      {fdata["power"]}\n'
+                             f'Gleichz.-keit: {fdata["g"]}\n'
+                             f'cos(f):        {fdata["phi"]}\n'
+                             f'Spannung:      {fdata["voltage"]}\n'
+                             f'Kabel:         {fdata["cable"]}\n'
+                             f'Querschnitt:   {fdata["section"]}\n'
+                             f'Kabellänge:    {fdata["length"]}\n'
+                             f'Spannungsfall: {fdata["du"]}\n'
+                             f'Verlegeart:    {fdata["laying"]}\n'
+                             f'Schutzorgan:   {fdata["cb"]}\n'
+                             f'S.-organ Typ:  {fdata["cb_type"]}\n'
+                             f'Auslöser:      {fdata["release"]}\n'
+                             f'Ausl.-strom:   {fdata["ib"]}</code>',
                              parse_mode='HTML')
 
     except (TypeError, ValueError):
