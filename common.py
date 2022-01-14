@@ -62,14 +62,13 @@ def laying_provided(message_text: str, find_ref=False, just_match=True):
         find_ref: whether to convert message to reference or not
         just_match: whether to return matched laying type or return just match
     """
-    message_text = message_text.lower()
     laying_types = LAYING_TYPES
 
     # If we need to convert short description to laying type reference
     if find_ref:
         ref_laying = convert_ref(message_text)
     else:
-        ref_laying = re.search(laying_types, message_text)
+        ref_laying = re.search(laying_types, message_text.lower())
         if ref_laying:
             ref_laying = ref_laying.group(0)[1:]
 
