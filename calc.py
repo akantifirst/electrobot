@@ -205,29 +205,48 @@ def format_values(computed_data):
     du = "dU=" + (str(du).replace('.', ',')) + "%"
     laying = f'{laying.upper()}.{ref_laying}'
 
-    formatted_data = [name, power, g, phi, voltage, cable, section,
-                      length, du, laying, cb, cb_type, release, ib]
+    formatted_data = {'name': name,
+                      'power': power,
+                      'g': g, 'phi': phi,
+                      'voltage': voltage,
+                      'cable': cable,
+                      'section': section,
+                      'length': length,
+                      'du': du,
+                      'laying': laying,
+                      'cb': cb,
+                      'cb_type': cb_type,
+                      'release': release,
+                      'ib': ib}
     return formatted_data
 
 
-def summary(data):
-    fdata, power_inp, project_info = [], 0, data[-1]
+def summary(data: dict):
+    fdata, power_inp = [], 0
+
+    project_number = data['project_number']
+    project_name = data['project_name']
+    switchboard = data['switchboard']
+
     pdf_path, dxf_path = PDF_LOCATION, DXF_LOCATION
 
     # Perform calculations and formatting sequentially to each feeder
-    for feeder in data[:-1]:
-        computed_data = calc(feeder)
-        fdata.append(format_values(computed_data))
-        power_inp += round(computed_data[1] * computed_data[9], 2)
+    for key in data:
+        if "feeder" in key:
+            parsed_data = parse_input(data[key])
+            computed_data = calc(parsed_data)
+            fdata.append(format_values(computed_data))
+            power_inp += round(computed_data[1] * computed_data[9], 2)
 
     # Calculate cumulative power for the power input
-    if len(data[:-1]) < 3:
-        power_inp = calc(data[0])[1] * 1.6
+    if len(data) < 6:
+        print(data['feeder1'])
+        power_inp = calc(parse_input(data['feeder1']))[1] * 1.6
     power_inp = f"{power_inp}kW e1"
     fdata.append(format_values(calc(parse_input(power_inp))))
 
     # Functions for generating .dxf and .pdf files
-    cad_write(fdata, project_info)
+    cad_write(fdata, project_number, project_name, switchboard)
     generate_pdf(dxf_path, pdf_path)
 
     # Clear data structures for the current user request
