@@ -42,16 +42,16 @@ def gen_infobox(block, dx=0, dy=0) -> None:
                          dxfattribs=style_boldline)
 
     # Define some attributes for the block 'block'
-    block.add_attdef('NAME', dxfattribs=style_name).set_pos((0 + dx, 117.25 + dy), align='CENTER')
-    block.add_attdef('POWER', dxfattribs=style_std).set_pos((-19 + dx, 110.75 + dy), align='LEFT')
-    block.add_attdef('G', dxfattribs=style_std).set_pos((2 + dx, 110.75 + dy), align='LEFT')
-    block.add_attdef('PHI', dxfattribs=style_std).set_pos((-19 + dx, 104.75 + dy), align='LEFT')
-    block.add_attdef('VOLTAGE', dxfattribs=style_std).set_pos((2 + dx, 104.75 + dy), align='LEFT')
-    block.add_attdef('CABLE', dxfattribs=style_std).set_pos((-19 + dx, 98.75 + dy), align='LEFT')
-    block.add_attdef('SECTION', dxfattribs=style_std).set_pos((2 + dx, 98.75 + dy), align='LEFT')
-    block.add_attdef('LENGTH', dxfattribs=style_std).set_pos((-19 + dx, 92.75 + dy), align='LEFT')
-    block.add_attdef('DU', dxfattribs=style_std).set_pos((2 + dx, 92.75 + dy), align='LEFT')
-    block.add_attdef('LAYING', dxfattribs=style_std).set_pos((0 + dx, 86.75 + dy), align='CENTER')
+    block.add_attdef('name', dxfattribs=style_name).set_pos((0 + dx, 117.25 + dy), align='CENTER')
+    block.add_attdef('power', dxfattribs=style_std).set_pos((-19 + dx, 110.75 + dy), align='LEFT')
+    block.add_attdef('g', dxfattribs=style_std).set_pos((2 + dx, 110.75 + dy), align='LEFT')
+    block.add_attdef('phi', dxfattribs=style_std).set_pos((-19 + dx, 104.75 + dy), align='LEFT')
+    block.add_attdef('voltage', dxfattribs=style_std).set_pos((2 + dx, 104.75 + dy), align='LEFT')
+    block.add_attdef('cable', dxfattribs=style_std).set_pos((-19 + dx, 98.75 + dy), align='LEFT')
+    block.add_attdef('section', dxfattribs=style_std).set_pos((2 + dx, 98.75 + dy), align='LEFT')
+    block.add_attdef('length', dxfattribs=style_std).set_pos((-19 + dx, 92.75 + dy), align='LEFT')
+    block.add_attdef('du', dxfattribs=style_std).set_pos((2 + dx, 92.75 + dy), align='LEFT')
+    block.add_attdef('laying', dxfattribs=style_std).set_pos((0 + dx, 86.75 + dy), align='CENTER')
 
 
 def gen_nb_ls(doc, name: str, dx=0, dy=0, arrow=True):
@@ -68,11 +68,11 @@ def gen_nb_ls(doc, name: str, dx=0, dy=0, arrow=True):
     nb_ls.add_line((-4.7, 22.7), (-2.5, 24), dxfattribs=style_electro)  # release
     nb_ls.add_line((0, 29), (0, 77.5), dxfattribs=style_electro)  # contact to feeder
 
-    nb_ls.add_attdef('CB', dxfattribs=style_std).set_pos((2.8, 32), align='LEFT')
-    nb_ls.add_attdef('CB_TYPE', dxfattribs=style_std).set_pos((2.8, 26), align='LEFT')
-    nb_ls.add_attdef('RELEASE', dxfattribs=style_std).set_pos((2.8, 20), align='LEFT')
-    nb_ls.add_attdef('IB', dxfattribs=style_std).set_pos((2.8, 14), align='LEFT')
-    nb_ls.add_attdef('Q', dxfattribs=style_q).set_pos((-2.8, 13), align='RIGHT')
+    nb_ls.add_attdef('cb', dxfattribs=style_std).set_pos((2.8, 32), align='LEFT')
+    nb_ls.add_attdef('cb_type', dxfattribs=style_std).set_pos((2.8, 26), align='LEFT')
+    nb_ls.add_attdef('release', dxfattribs=style_std).set_pos((2.8, 20), align='LEFT')
+    nb_ls.add_attdef('ib', dxfattribs=style_std).set_pos((2.8, 14), align='LEFT')
+    nb_ls.add_attdef('q', dxfattribs=style_q).set_pos((-2.8, 13), align='RIGHT')
 
     # Define hatch arrows and points
     hatch = nb_ls.add_hatch(color=5)
@@ -194,7 +194,7 @@ def gen_logo(doc):
                 gray_hatch.paths.add_polyline_path(row, is_closed=True, flags=ezdxf.const.BOUNDARY_PATH_OUTERMOST)
 
 
-def cad_write(formatted_data, project_info):
+def cad_write(formatted_data, project_number, project_name, switchboard):
     # Create a new drawing in the DXF format of AutoCAD 2010
     doc = ezdxf.new('R2000', setup=True)
 
@@ -220,14 +220,10 @@ def cad_write(formatted_data, project_info):
     msp.add_lwpolyline(((0, 0), (0, 297), (420, 297), (420, 0), (0, 0)), dxfattribs=style_thin)
     title_ref = msp.add_blockref('TITLE', (20, 7))
 
-    # Parse project information
-    project_number = project_info['project_number']
-    project_name = project_info['project_name']
-    if len(project_info['project_name']) > 16:
-        project_name_short = project_info['project_name'][:13] + "..."
+    if len(project_name) > 16:
+        project_name_short = project_name[:13] + "..."
     else:
-        project_name_short = project_info['project_name']
-    switchboard = project_info['switchboard']
+        project_name_short = project_name
 
     # Fill in title attributes
     title_ref.add_auto_attribs({'PROJEKT': f"{project_number} {project_name}",
@@ -255,40 +251,23 @@ def cad_write(formatted_data, project_info):
         'yscale': scale})
 
     for number, value in enumerate(formatted_data):
-        # values is a dict with the attribute tag as item-key and
-        # the attribute text content as item-value.
-        name, power, g, phi, voltage, cable, section, length, du, laying, cb, cb_type, release, ib = value
+
         x_feed, y_feed = get_insert_point(number)
-        values = {
-            'NAME': name,
-            'POWER': power,
-            'G': g,
-            'PHI': phi,
-            'VOLTAGE': voltage,
-            'CABLE': cable,
-            'SECTION': section,
-            'LENGTH': length,
-            'DU': du,
-            'LAYING': laying,
-            'CB': cb,
-            'CB_TYPE': cb_type,
-            'RELEASE': release,
-            'IB': ib,
-            'Q': "Q" + str(number + 1),
-        }
+        # "Value" is a dict "item-key"
+        value['q'] = "Q" + str(number + 1)
         if number < len(formatted_data) - 1:
             nb_ls_ref = msp.add_blockref('NB_LS', (x_feed, y_feed), dxfattribs={
                 'xscale': 0.75,
                 'yscale': 0.75})
-            nb_ls_ref.add_auto_attribs(values)
+            nb_ls_ref.add_auto_attribs(value)
         else:
             nb_en_ref = msp.add_blockref('NB_EN', (55, 96.875), dxfattribs={
                 'xscale': 0.75,
                 'yscale': 0.75})
-            values['Q'] = "QX0"
-            values['NAME'] = "EINSPEISUNG"
-            values['DU'] = "dU=0%"
-            nb_en_ref.add_auto_attribs(values)
+            value['Q'] = "QX0"
+            value['NAME'] = "EINSPEISUNG"
+            value['DU'] = "dU=0%"
+            nb_en_ref.add_auto_attribs(value)
 
     msp.add_line((55, 155), (x_feed - 16, 155), dxfattribs=style_electro)
 
