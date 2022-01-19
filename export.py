@@ -9,6 +9,8 @@ from ezdxf.addons.drawing.properties import LayoutProperties
 from ezdxf.addons.drawing.config import Configuration
 from ezdxf.math import Matrix44
 
+from config import BGCOLOR
+
 # TODO:
 #   resolve font scaling problem
 
@@ -35,25 +37,28 @@ class CustomBackend(MatplotlibBackend):
         if not text.strip():
             return  # no point rendering empty strings
         font_properties = self.get_font_properties(properties.font)
-        assert self.current_entity is not None
-        text = prepare_string_for_rendering(text, self.current_entity.dxftype())
-        scale = self._text_renderer.get_scale(cap_height, font_properties)
-        text_transform = Matrix44.scale(scale) @ transform
-        x, y, _, _ = text_transform.get_row(3)
-        scale = math.sqrt(sum(i * i for i in text_transform.get_row(0)))
-        self.ax.text(
-            x, y, text.replace('$', '\\$'),
-            color=properties.color, size=1.161 * scale * self._text_size_scale, in_layout=True,
-            fontproperties=font_properties, transform_rotates_text=True, zorder=self._get_z()
-        )
+        if self.current_entity is not None:
+            text = prepare_string_for_rendering(text, self.current_entity.dxftype())
+            scale = self._text_renderer.get_scale(cap_height, font_properties)
+            text_transform = Matrix44.scale(scale) @ transform
+            x, y, _, _ = text_transform.get_row(3)
+            scale = math.sqrt(sum(i * i for i in text_transform.get_row(0)))
+            self.ax.text(
+                x, y, text.replace('$', '\\$'),
+                color=properties.color, size=1.161 * scale * self._text_size_scale, in_layout=True,
+                fontproperties=font_properties, transform_rotates_text=True, zorder=self._get_z()
+            )
 
 
 def generate_pdf(input_dxf, output_pdf):
     config = Configuration.defaults()
     try:
         doc = ezdxf.readfile(input_dxf)
+    except (IOError, FileNotFoundError):
+        print("File system related error")
+    else:
         layout = doc.modelspace()
-        ezdxf.addons.drawing.properties.MODEL_SPACE_BG_COLOR = '#FFFFFF'
+        ezdxf.addons.drawing.properties.MODEL_SPACE_BG_COLOR = BGCOLOR
         fig: plot.Figure = plot.figure(frameon=False)
         ax: plot.Axes = fig.add_axes((0, 0, 1, 1))
         ax.margins(0, 0)
@@ -73,5 +78,3 @@ def generate_pdf(input_dxf, output_pdf):
             output_pdf, dpi=72, facecolor=ax.get_facecolor()
         )
         plot.close(fig)
-    except IOError:
-        print("File system related error")
