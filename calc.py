@@ -1,18 +1,27 @@
+# Common Python libraries
 import re
+import logging
 from math import sqrt, sin, acos
 from export import generate_pdf
+
+# Project modules
 from cad import cad_write
 from common import csv_read
 from config import *
 
 
-# BUG: du has no effect with bigger power e.g. 500kw 300m
+logging.basicConfig(level=logging.CRITICAL)
+logger = logging.getLogger(__name__)
 
 
-def clear_chars(input_string):
+def clear_chars(text: str) -> float:
     """This function deletes all chars from the string,
     except digits or decimal separation dot"""
-    number = float(''.join([e for e in input_string if e.isdigit() or e == '.']))
+    number = 0
+    try:
+        number = float(''.join([e for e in text if e.isdigit() or e == '.']))
+    except Exception as error:
+        logger.exception(error)
     return number
 
 
@@ -38,7 +47,7 @@ def parse_input(user_input):
     # Refine user input
     user_input = re.sub(' +', ' ', user_input).replace(',', '.').lower().split(' ')
     # get name of feeder
-    if sum(c.isalpha() for c in user_input[0]) > 2 or sum(c.isdigit() for c in user_input[0]) == 0:
+    if sum(c.isalpha() for c in user_input[0]) > 2 or user_input[0].isalpha():
         name = user_input[0]
         user_input = user_input[1:]
     try:
@@ -240,7 +249,6 @@ def summary(data: dict):
 
     # Calculate cumulative power for the power input
     if len(data) < 6:
-        print(data['feeder1'])
         power_inp = calc(parse_input(data['feeder1']))[1] * 1.6
     power_inp = f"{power_inp}kW e1"
     fdata.append(format_values(calc(parse_input(power_inp))))
