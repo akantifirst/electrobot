@@ -1,8 +1,7 @@
+import os
 import re
 import csv
-from datetime import (
-    date,
-    datetime)
+from datetime import datetime
 
 from aiogram.types import KeyboardButton
 from aiogram.utils.keyboard import ReplyKeyboardBuilder
@@ -16,10 +15,8 @@ def csv_read(path: str) -> list:
     """
         Write csv content to nested list
     """
-    data = []
-    for row in csv.reader(open(f'{path}', 'r', encoding="utf-8"), delimiter=';'):
-        data.append(row)
-    return data
+    csv_reader = csv.reader(open(os.path.join(path), 'r', encoding="utf-8"), delimiter=';')
+    return [row for row in csv_reader]
 
 
 def load_provided(message_text: str):
@@ -39,7 +36,7 @@ def convert_ref(message_text: str) -> str:
         according to table in LAYING.csv. Example:
         "Installationskanal" -> "e1"
     """
-    laying_table = csv_read(r'db/LAYING.csv')
+    laying_table = csv_read(os.path.join('db/LAYING.csv'))
     try:
         index = [row[1] for row in laying_table].index(message_text)
         ref_laying = str(laying_table[index][0])
@@ -119,6 +116,5 @@ def get_datetime():
     """
         Self-explained function
     """
-    now = datetime.now().strftime("%H:%M")
-    today = date.today().strftime("%d.%m.%y")
-    return now, today
+    now = datetime.now()
+    return now.strftime("%H:%M"), now.strftime("%d.%m.%y")
