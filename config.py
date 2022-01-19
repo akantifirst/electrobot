@@ -19,4 +19,4 @@ RO_AL = 0.036
 LAYING_TYPES = " a1| a2| b1| b2| c1| d1| e1| f1| f2| f3| g1| g2"
 PDF_LOCATION = "output/export.pdf"
 DXF_LOCATION = "output/template.dxf"
-
+BGCOLOR = '#FFFFFF'
